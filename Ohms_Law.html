@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ohm's Law Experiment</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .slider {
+      width: 300px;
+    }
+    .result {
+      margin-top: 20px;
+    }
+    #circuitCanvas {
+      border: 1px solid #ccc;
+      margin-top: 30px;
+      background-color: #f9f9f9;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: darkred;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ohm's Law Experiment</h1>
+  <p>Adjust the voltage (V) and resistance (R) to calculate the current (I):</p>
+
+  <label for="voltage">Voltage (V):</label>
+  <input type="range" id="voltage" class="slider" min="1" max="20" value="10" oninput="calculateCurrent()">
+  <span id="voltageValue">10</span> V
+  <br>
+  <label for="resistance">Resistance (Ω):</label>
+  <input type="range" id="resistance" class="slider" min="1" max="10" value="5" oninput="calculateCurrent()">
+  <span id="resistanceValue">5</span> Ω
+
+  <div class="result">
+    <p>Current (I): <span id="currentValue">2.00</span> A</p>
+  </div>
+
+  <canvas id="circuitCanvas" width="400" height="100"></canvas>
+
+  <div>
+    <button onclick="recordResult()">Record Result</button>
+    <button onclick="saveResultsToFile()">Save Results</button>
+  </div>
+
+  <h2>Experiment Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Voltage (V)</th>
+        <th>Resistance (Ω)</th>
+        <th>Current (A)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div>
+    <a href="electricity.html" class="back-button">Back to Electricity Experiments</a>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+
+  <script>
+    let currentValue = 0;
+    let results = []; // Array to store results
+
+    function calculateCurrent() {
+      const voltage = parseFloat(document.getElementById("voltage").value);
+      const resistance = parseFloat(document.getElementById("resistance").value);
+      document.getElementById("voltageValue").textContent = voltage;
+      document.getElementById("resistanceValue").textContent = resistance;
+      const current = voltage / resistance;
+      currentValue = current;
+      document.getElementById("currentValue").textContent = current.toFixed(2);
+    }
+
+    // Record current values into the results array
+    function recordResult() {
+      const voltage = parseFloat(document.getElementById("voltage").value);
+      const resistance = parseFloat(document.getElementById("resistance").value);
+      const current = voltage / resistance;
+
+      results.push({
+        voltage: voltage.toFixed(2),
+        resistance: resistance.toFixed(2),
+        current: current.toFixed(2)
+      });
+
+      updateResultsTable();
+    }
+
+    // Update the results table with stored data
+    function updateResultsTable() {
+      const tableBody = document.querySelector("#resultsTable tbody");
+      tableBody.innerHTML = "";
+
+      results.forEach(result => {
+        const row = `
+          <tr>
+            <td>${result.voltage}</td>
+            <td>${result.resistance}</td>
+            <td>${result.current}</td>
+          </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    // Save results to a file
+    function saveResultsToFile() {
+      const data = JSON.stringify(results, null, 2);
+      const blob = new Blob([data], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'ohms_law_results.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    // Initialize values on page load
+    calculateCurrent();
+
+    // --- Simulation: Draw a simple circuit with a moving electron ---
+    const canvas = document.getElementById("circuitCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let electronX = 0;
+    let lastTimestamp = null;
+
+    function animate(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const deltaTime = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+
+      const resistorWidth = 40;
+      const resistorHeight = 20;
+      const resistorX = canvas.width / 2 - resistorWidth / 2;
+      const resistorY = canvas.height / 2 - resistorHeight / 2;
+      ctx.strokeRect(resistorX, resistorY, resistorWidth, resistorHeight);
+
+      const speed = currentValue * 50;
+      electronX += speed * deltaTime;
+      if (electronX > canvas.width) {
+        electronX = 0;
+      }
+
+      ctx.fillStyle = "blue";
+      ctx.beginPath();
+      ctx.arc(electronX, canvas.height / 2, 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

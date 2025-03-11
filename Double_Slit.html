@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Double-Slit Interference Simulation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #controls {
+      margin: 10px auto;
+      display: inline-block;
+      text-align: left;
+      background-color: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #controls div {
+      margin-bottom: 5px;
+    }
+    label {
+      display: inline-block;
+      width: 150px;
+    }
+    input {
+      width: 80px;
+    }
+    button {
+      margin-top: 5px;
+      padding: 5px 10px;
+    }
+    .diagram-section {
+      margin-top: 20px;
+    }
+    #waveCanvas, #intensityCanvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+      display: block;
+      margin: 20px auto;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: #2e7d32;
+      border: 1px solid #2e7d32;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .back-button:hover {
+      background-color: #c8e6c9;
+    }
+    .note {
+      max-width: 800px;
+      margin: 10px auto;
+      font-size: 14px;
+      color: #555;
+      text-align: left;
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .equation {
+      background-color: #eee;
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 0 4px;
+      font-family: "Courier New", monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Double-Slit Interference Simulation</h1>
+
+  <!-- Controls for both diagram and intensity plot -->
+  <div id="controls">
+    <div><strong>Diagram (pixels)</strong></div>
+    <div>
+      <label>Wave Speed:</label>
+      <input type="number" id="waveSpeed" value="2" step="0.1"> px/frame
+    </div>
+    <div>
+      <label>Waveλ (diagram):</label>
+      <input type="number" id="waveLambda" value="20" step="1"> px
+    </div>
+    <div>
+      <label>Slit Height:</label>
+      <input type="number" id="slitHeight" value="40" step="1"> px
+    </div>
+    <div>
+      <label>Slit Separation:</label>
+      <input type="number" id="slitSeparation" value="60" step="1"> px
+    </div>
+    <hr/>
+    <div><strong>Intensity (meters)</strong></div>
+    <div>
+      <label>Slit Width (b):</label>
+      <input type="number" id="slitWidth" value="0.0002" step="1e-6"> m
+    </div>
+    <div>
+      <label>Separation (d):</label>
+      <input type="number" id="slitSepM" value="0.0005" step="1e-6"> m
+    </div>
+    <div>
+      <label>Distance (L):</label>
+      <input type="number" id="distL" value="1" step="0.01"> m
+    </div>
+    <div>
+      <label>Wavelength (λ):</label>
+      <input type="number" id="lambdaM" value="5.5e-7" step="1e-9"> m
+    </div>
+    <button onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="note">
+    <p>
+      <strong>Diagram:</strong> This schematic shows vertical wavefronts (blue) approaching a barrier with two slits.
+      The barrier is at x=300 px. Two slits (each of the specified height) are separated by the specified distance.
+      Behind each slit, red arcs represent the outgoing wavefronts.
+    </p>
+    <p>
+      <strong>Intensity:</strong> The theoretical intensity distribution for double-slit interference (small-angle approximation) is:
+    </p>
+    <p>
+      <span class="equation">I(θ) ∝ ( sin(α)/α )² · cos²(β)</span>, 
+      where 
+      <span class="equation">α = (π·b·sinθ)/λ</span> and 
+      <span class="equation">β = (π·d·sinθ)/λ</span>.
+      For small angles, <span class="equation">θ ≈ y/L</span>.
+    </p>
+    <p>
+      The bright fringe spacing is 
+      <span class="equation">Δy = (L·λ)/d</span>.
+      The plot’s horizontal axis is Angle (θ) and the vertical axis is normalized Intensity.
+    </p>
+  </div>
+
+  <!-- Diagram Section (Top Canvas) -->
+  <div class="diagram-section">
+    <canvas id="waveCanvas" width="800" height="300"></canvas>
+  </div>
+
+  <!-- Intensity Plot Section (Bottom Canvas) -->
+  <div class="diagram-section">
+    <canvas id="intensityCanvas" width="600" height="200"></canvas>
+  </div>
+
+  <div>
+    <a href="waves.html" class="back-button">Back to Waves</a>
+  </div>
+
+  <script>
+    /**************************************************************
+     * 1) Double-Slit Wave Diagram (Top Canvas)
+     **************************************************************/
+    const waveCanvas = document.getElementById("waveCanvas");
+    const wctx = waveCanvas.getContext("2d");
+
+    const waveSpeedInput = document.getElementById("waveSpeed");
+    const waveLambdaInput = document.getElementById("waveLambda");
+    const slitHeightInput = document.getElementById("slitHeight");
+    const slitSeparationInput = document.getElementById("slitSeparation");
+
+    let waveW = waveCanvas.width;
+    let waveH = waveCanvas.height;
+    let barrierX = 300; // barrier x-position
+    let waveSpeed = parseFloat(waveSpeedInput.value);
+    let waveLambda = parseFloat(waveLambdaInput.value);
+    let slitHeight = parseFloat(slitHeightInput.value);
+    let slitSeparation = parseFloat(slitSeparationInput.value);
+    let diagramTime = 0;
+
+    let center1 = waveH/2 - slitSeparation/2;
+    let center2 = waveH/2 + slitSeparation/2;
+    let halfSlit = slitHeight/2;
+
+    function drawBarrierAndSlits() {
+      wctx.save();
+      
+      wctx.fillStyle = '#555';
+      wctx.fillRect(barrierX, 0, 10, waveH);
+      
+      wctx.globalCompositeOperation = 'destination-out';
+      wctx.fillStyle = 'black';
+      wctx.fillRect(barrierX, center1 - halfSlit, 10, slitHeight);
+      wctx.fillRect(barrierX, center2 - halfSlit, 10, slitHeight);
+      wctx.globalCompositeOperation = 'source-over';
+      wctx.restore();
+    }
+
+
+
+    
+    function drawIncomingWaves() {
+      let offset = (waveSpeed * diagramTime) % waveLambda;
+      wctx.save();
+      wctx.strokeStyle = 'blue';
+      wctx.lineWidth = 1;
+      for (let lineX = -waveLambda; lineX < barrierX+waveLambda; lineX += waveLambda) {
+        let actualX = lineX + offset;
+        if (actualX < 0) continue;
+        if (actualX > barrierX) break;
+        wctx.beginPath();
+        wctx.moveTo(actualX, 0);
+        wctx.lineTo(actualX, waveH);
+        wctx.stroke();
+      }
+      wctx.restore();
+    }
+
+    function drawOutgoingArcs() {
+      let arrivalTime = barrierX / waveSpeed;
+      let dtBehind = diagramTime - arrivalTime;
+      if (dtBehind < 0) return;
+
+      let maxRadius = waveW - barrierX + 50;
+      let nMax = Math.floor(maxRadius / waveLambda);
+
+      wctx.save();
+      wctx.strokeStyle = 'red';
+      wctx.lineWidth = 1;
+
+      let N_SOURCES = 5;
+      let slitPoints = [];
+      let step = slitHeight / (N_SOURCES - 1);
+      for (let i=0; i<N_SOURCES; i++){
+        slitPoints.push({ x: barrierX, y: (center1 - halfSlit) + i*step });
+        slitPoints.push({ x: barrierX, y: (center2 - halfSlit) + i*step });
+      }
+
+      let baseRadius = waveSpeed * dtBehind;
+      for (let sp of slitPoints) {
+        for (let n = 0; n <= nMax; n++) {
+          let radius = baseRadius - n*waveLambda;
+          if (radius < 0 || radius > maxRadius) continue;
+          wctx.beginPath();
+          wctx.arc(sp.x, sp.y, radius, -0.3*Math.PI, 0.3*Math.PI);
+          wctx.stroke();
+        }
+      }
+      wctx.restore();
+    }
+
+    function animateDiagram() {
+      wctx.clearRect(0, 0, waveW, waveH);
+      drawBarrierAndSlits();
+      drawIncomingWaves();
+      drawOutgoingArcs();
+      diagramTime += 1;
+      requestAnimationFrame(animateDiagram);
+    }
+
+    /**************************************************************
+     * 2) Double-Slit Intensity Plot (Bottom Canvas)
+     **************************************************************/
+    const intensityCanvas = document.getElementById("intensityCanvas");
+    const ictx = intensityCanvas.getContext("2d");
+    let iW = intensityCanvas.width;
+    let iH = intensityCanvas.height;
+
+    const slitWidthInput = document.getElementById("slitWidth"); // b
+    const slitSepMInput = document.getElementById("slitSepM");   // d
+    const distLInput = document.getElementById("distL");
+    const lambdaMInput = document.getElementById("lambdaM");
+
+    function drawIntensityPlot() {
+      ictx.clearRect(0, 0, iW, iH);
+
+      let b = parseFloat(slitWidthInput.value);
+      let d = parseFloat(slitSepMInput.value);
+      let L = parseFloat(distLInput.value);
+      let lam = parseFloat(lambdaMInput.value);
+
+      
+      let yFirst = L*lam/b;
+      let Y_max = 3 * yFirst;
+      let yMin = -Y_max;
+      let scaleX = iW/(Y_max - yMin);
+      let midX = iW/2;
+
+      ictx.beginPath();
+      for (let px=0; px<iW; px++){
+        let yVal = (px - midX)/scaleX; 
+        let theta = yVal / L;
+        let alpha = Math.PI * b * theta / lam; 
+        let beta  = Math.PI * d * theta / lam;
+        let envelope = (alpha === 0)? 1 : Math.pow(Math.sin(alpha)/alpha, 2);
+        let interference = Math.pow(Math.cos(beta), 2);
+        let Irel = envelope * interference;
+        let py = iH - Irel*iH;
+        if(px===0) ictx.moveTo(px, py);
+        else ictx.lineTo(px, py);
+      }
+      ictx.strokeStyle = 'green';
+      ictx.lineWidth = 2;
+      ictx.stroke();
+
+      // center line
+      ictx.strokeStyle = 'red';
+      ictx.beginPath();
+      ictx.moveTo(midX, 0);
+      ictx.lineTo(midX, iH);
+      ictx.stroke();
+
+      // Mark bright fringes
+      // bright fringe condition: d*sinθ = m λ => y_m = m*(L λ / d)
+      ictx.save();
+      ictx.strokeStyle = '#999';
+      ictx.lineWidth = 1;
+      ictx.fillStyle = '#333';
+      ictx.font = "12px Arial";
+
+      // We'll label up to m=4 on each side
+      let delta = L*lam/d; // fringe spacing
+      for (let m=0; m<=4; m++){
+        let y_m = m*delta;
+        if (y_m > Y_max) break;
+
+        // place labels in a staggered manner so they don't overlap
+        let labelOffsetY = 12 + (m*12);
+
+        let xPlus = midX + y_m*scaleX;
+        let xMinus = midX - y_m*scaleX;
+
+        ictx.beginPath();
+        ictx.moveTo(xPlus, 0);
+        ictx.lineTo(xPlus, iH);
+        ictx.stroke();
+
+        if (m===0) {
+          ictx.fillText("Central max", xPlus+2, labelOffsetY);
+        } else {
+          ictx.fillText(`${m}th max`, xPlus+2, labelOffsetY);
+        }
+
+        if(m>0){
+          ictx.beginPath();
+          ictx.moveTo(xMinus, 0);
+          ictx.lineTo(xMinus, iH);
+          ictx.stroke();
+          ictx.fillText(`${m}th max`, xMinus+2, labelOffsetY);
+        }
+      }
+      ictx.restore();
+
+      // Axis labels
+      ictx.save();
+      ictx.fillStyle = "black";
+      ictx.font = "14px Arial";
+      ictx.fillText("Angle (θ)", iW/2 - 30, iH - 5);
+      ictx.translate(15, iH/2);
+      ictx.rotate(-Math.PI/2);
+      ictx.fillText("Intensity", 0, 0);
+      ictx.restore();
+    }
+
+    function resetAll() {
+      waveSpeed = parseFloat(waveSpeedInput.value);
+      waveLambda = parseFloat(waveLambdaInput.value);
+      slitHeight = parseFloat(slitHeightInput.value);
+      slitSeparation = parseFloat(slitSeparationInput.value);
+      center1 = waveH/2 - slitSeparation/2;
+      center2 = waveH/2 + slitSeparation/2;
+      halfSlit = slitHeight/2;
+      diagramTime = 0;
+      drawIntensityPlot();
+    }
+
+    function animateDiagram() {
+      wctx.clearRect(0,0,waveW,waveH);
+      drawBarrierAndSlits();
+      drawIncomingWaves();
+      drawOutgoingArcs();
+      diagramTime += 1;
+      requestAnimationFrame(animateDiagram);
+    }
+    function animateIntensity() {
+      drawIntensityPlot();
+      requestAnimationFrame(animateIntensity);
+    }
+
+    // Initialize
+    resetAll();
+    animateDiagram();
+    animateIntensity();
+  </script>
+</body>
+</html>

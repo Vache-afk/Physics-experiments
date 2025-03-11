@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projectile Motion Experiment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #simulation {
+      position: relative;
+      width: 600px;
+      height: 400px;
+      margin: 20px auto;
+      border: 2px solid #000;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+    .ball {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: red;
+    }
+    #controls {
+      margin-top: 20px;
+    }
+    #velocityDisplay {
+      margin-top: 10px;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <h1>Projectile Motion Experiment</h1>
+  <div id="simulation">
+    <div class="ball" id="ball"></div>
+  </div>
+  <div id="controls">
+    <label for="angle">Select Launch Angle (degrees):</label>
+    <select id="angle">
+      <option value="15">15°</option>
+      <option value="30">30°</option>
+      <option value="45">45°</option>
+      <option value="60">60°</option>
+      <option value="90">90°</option>
+    </select>
+    <br>
+    <label for="velocity">Enter Initial Velocity (m/s):</label>
+    <input type="number" id="velocity" value="20" min="1">
+    <br>
+    <button onclick="startSimulation()">Start Simulation</button>
+  </div>
+  <div id="velocityDisplay">
+    <p>Velocity (Horizontal, Vertical): <span id="velocityText">0, 0</span> m/s</p>
+    <p>Time: <span id="timeText">0.00</span> s</p>
+  </div>
+
+  <!-- Results Table -->
+  <h2>Simulation Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Angle (°)</th>
+        <th>Initial Velocity (m/s)</th>
+        <th>Horizontal Range (m)</th>
+        <th>Max Height (m)</th>
+        <th>Flight Time (s)</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+
+  <button onclick="saveResultsToFile()">Save Results</button>
+
+  <!-- Back Buttons -->
+  <div>
+    <a href="mechanics.html" class="back-button">Back to Mechanics</a>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+
+  <script>
+    const g = 9.8; 
+    const simulationArea = document.getElementById('simulation');
+    const ball = document.getElementById('ball');
+    const velocityText = document.getElementById('velocityText');
+    const timeText = document.getElementById('timeText');
+    let interval;
+    let time = 0;
+    let angle;
+    let initialVelocity;
+    let vx, vy;
+    let x = 0, y = 0;
+
+    // Scaling factors
+    const scaleX = 6; 
+    const scaleY = 25;
+
+    // Array to store results
+    let results = [];
+
+    function startSimulation() {
+      clearInterval(interval);
+      angle = parseFloat(document.getElementById('angle').value);
+      initialVelocity = parseFloat(document.getElementById('velocity').value);
+
+      const radianAngle = angle * Math.PI / 180;
+
+      vx = initialVelocity * Math.cos(radianAngle);
+      vy = initialVelocity * Math.sin(radianAngle);
+
+      x = 0;
+      y = 0;
+      time = 0;
+      ball.style.left = '0px';
+      ball.style.bottom = '0px';
+
+      interval = setInterval(() => {
+        time += 0.01;
+
+        x = vx * time;
+        y = vy * time - 0.5 * g * time * time;
+
+        let scaledX = x * scaleX;
+        let scaledY = y * scaleY;
+
+        const maxX = simulationArea.clientWidth - ball.clientWidth;
+
+        if (scaledX > maxX) {
+          scaledX = maxX;
+          x = maxX / scaleX;
+        }
+
+        if (scaledY < 0) {
+          scaledY = 0;
+          clearInterval(interval);
+
+          let maxHeight = (vy ** 2) / (2 * g);
+          let horizontalRange = x;
+          let flightTime = time;
+
+          // Store result in the array
+          results.push({
+            angle: angle,
+            initialVelocity: initialVelocity,
+            horizontalRange: horizontalRange.toFixed(2),
+            maxHeight: maxHeight.toFixed(2),
+            flightTime: flightTime.toFixed(2)
+          });
+
+          updateResultsTable();
+        }
+
+        ball.style.left = `${scaledX}px`;
+        ball.style.bottom = `${scaledY}px`;
+
+        const horizontalVelocity = vx;
+        const verticalVelocity = vy - g * time;
+        velocityText.textContent = `${horizontalVelocity.toFixed(2)}, ${verticalVelocity.toFixed(2)}`;
+        timeText.textContent = time.toFixed(2);
+      }, 10);
+    }
+
+    function updateResultsTable() {
+      const tableBody = document.querySelector("#resultsTable tbody");
+      tableBody.innerHTML = "";
+
+      results.forEach((result) => {
+        let row = `<tr>
+          <td>${result.angle}</td>
+          <td>${result.initialVelocity}</td>
+          <td>${result.horizontalRange}</td>
+          <td>${result.maxHeight}</td>
+          <td>${result.flightTime}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    function saveResultsToFile() {
+      var raw = JSON.stringify(results, null, 2); 
+      var file = new Blob([raw], { type: 'text/plain' });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = "sample.txt";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+</body>
+</html>

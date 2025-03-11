@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Throwing Ball from Cliff</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #simulation {
+      position: relative;
+      width: 800px;
+      height: 500px;
+      margin: 20px auto;
+      border: 2px solid #000;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+    #cliff {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 5px;
+      height: 100%;
+      background-color: brown;
+    }
+    .ball {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: red;
+    }
+    .arrow {
+      position: absolute;
+      background-color: blue;
+      transition: all 16ms ease; /* Smooth transitions */
+    }
+    .arrow-label {
+      position: absolute;
+      font-size: 12px;
+      color: black;
+    }
+    #controls {
+      margin-top: 20px;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+  </style>
+</head>
+<body>
+  <h1>Throwing Ball from Cliff Experiment</h1>
+  <div id="simulation">
+    <div id="cliff"></div>
+    <div class="ball" id="ball"></div>
+    <div id="vxArrow" class="arrow"></div>
+    <div id="vyArrow" class="arrow"></div>
+    <div id="vxLabel" class="arrow-label"></div>
+    <div id="vyLabel" class="arrow-label"></div>
+  </div>
+  <div id="controls">
+    <label for="cliffHeight">Cliff Height (m, max 200):</label>
+    <input type="number" id="cliffHeight" value="200" min="1" max="200">
+    <br>
+    <label for="angle">Launch Angle (degrees):</label>
+    <select id="angle">
+      <option value="15">15°</option>
+      <option value="30">30°</option>
+      <option value="45" selected>45°</option>
+      <option value="60">60°</option>
+      <option value="75">75°</option>
+    </select>
+    <br>
+    <label for="velocity">Initial Velocity (m/s):</label>
+    <input type="number" id="velocity" value="20" min="1">
+    <br>
+    <button onclick="startSimulation()">Start Experiment</button>
+    <button onclick="saveResultsToFile()">Save Results</button>
+  </div>
+  <div id="velocityDisplay">
+    <p>Velocity (Horizontal, Vertical): <span id="velocityText">0, 0</span> m/s</p>
+    <p>Time: <span id="timeText">0.00</span> s</p>
+  </div>
+
+  <h2>Simulation Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Cliff Height (m)</th>
+        <th>Angle (°)</th>
+        <th>Initial Velocity (m/s)</th>
+        <th>Horizontal Range (m)</th>
+        <th>Max Height (m)</th>
+        <th>Flight Time (s)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div>
+    <a href="mechanics.html" class="back-button">Back to Mechanics</a>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+
+  <script>
+    const g = 9.81; // gravitational acceleration (m/s²)
+    const simulationArea = document.getElementById('simulation');
+    const ball = document.getElementById('ball');
+    const velocityText = document.getElementById('velocityText');
+    const timeText = document.getElementById('timeText');
+
+    const scaleX = 0.5;  // 1 meter = 0.5 pixels horizontally
+    const scaleY = 1;    // 1 meter = 1 pixel vertically
+    const arrowScale = 3; // Increased for visibility
+    const MAX_CLIFF_HEIGHT = 200;
+
+    let interval, time, angle, initialVelocity, cliffHeight, vx, vy, x, y;
+    let results = [];
+
+    function startSimulation() {
+      clearInterval(interval);
+
+      cliffHeight = Math.min(
+        Math.max(1, parseFloat(document.getElementById('cliffHeight').value)),
+        MAX_CLIFF_HEIGHT
+      );
+      document.getElementById('cliffHeight').value = cliffHeight;
+
+      angle = parseFloat(document.getElementById('angle').value);
+      initialVelocity = parseFloat(document.getElementById('velocity').value);
+
+      const radianAngle = angle * Math.PI / 180;
+      vx = initialVelocity * Math.cos(radianAngle);
+      vy = initialVelocity * Math.sin(radianAngle);
+      x = 0;
+      y = cliffHeight;
+      time = 0;
+
+      ball.style.left = `${x * scaleX}px`;
+      ball.style.bottom = `${y * scaleY}px`;
+
+      let maxHeight = cliffHeight;
+      const dt = 0.016; // 16ms timestep for smoothness
+
+      interval = setInterval(() => {
+        time += dt;
+
+        x += vx * dt;
+        vy -= g * dt;
+        y += vy * dt;
+
+        if (y > maxHeight) maxHeight = y;
+
+        let scaledX = x * scaleX;
+        let scaledY = y * scaleY;
+
+        const maxX = simulationArea.clientWidth - ball.clientWidth;
+        const maxY = simulationArea.clientHeight - ball.clientHeight;
+
+        if (scaledX > maxX) {
+          scaledX = maxX;
+          x = scaledX / scaleX;
+          vx = 0;
+        }
+
+        if (scaledY < 0) {
+          scaledY = 0;
+          y = 0;
+          clearInterval(interval);
+
+          results.push({
+            cliffHeight: cliffHeight.toFixed(2),
+            angle: angle,
+            initialVelocity: initialVelocity,
+            horizontalRange: x.toFixed(2),
+            maxHeight: maxHeight.toFixed(2),
+            flightTime: time.toFixed(2)
+          });
+          updateResultsTable();
+        }
+
+        ball.style.left = `${scaledX}px`;
+        ball.style.bottom = `${scaledY}px`;
+
+        const ballCenterX = scaledX + ball.clientWidth / 2;
+        const ballCenterY = simulationArea.clientHeight - scaledY - ball.clientHeight / 2;
+
+        const vxArrow = document.getElementById('vxArrow');
+        const vyArrow = document.getElementById('vyArrow');
+        const vxLabel = document.getElementById('vxLabel');
+        const vyLabel = document.getElementById('vyLabel');
+
+        // Horizontal arrow (right when positive, left when negative)
+        const vxLength = Math.abs(vx) * arrowScale;
+        vxArrow.style.width = `${vxLength}px`;
+        vxArrow.style.height = '4px';
+        vxArrow.style.left = `${ballCenterX}px`;
+        vxArrow.style.top = `${ballCenterY}px`;
+        vxArrow.style.transformOrigin = 'left center';
+        vxArrow.style.transform = `rotate(${vx < 0 ? 180 : 0}deg)`;
+
+        // Vertical arrow (up when positive, down when negative)
+        const vyLength = Math.abs(vy) * arrowScale;
+        vyArrow.style.width = '4px';
+        vyArrow.style.height = `${vyLength}px`;
+        vyArrow.style.left = `${ballCenterX - 2}px`;
+        vyArrow.style.top = vy >= 0 ? 
+          `${ballCenterY - vyLength}px` : 
+          `${ballCenterY}px`;
+        vyArrow.style.transformOrigin = vy >= 0 ? 'center bottom' : 'center top';
+        vyArrow.style.transform = vy >= 0 ? 'rotate(0deg)' : 'rotate(0deg)';
+
+        // Labels
+        vxLabel.textContent = `vx: ${vx.toFixed(1)} m/s`;
+        vxLabel.style.left = `${ballCenterX + (vx >= 0 ? vxLength + 5 : -60)}px`;
+        vxLabel.style.top = `${ballCenterY - 5}px`;
+
+        vyLabel.textContent = `vy: ${vy.toFixed(1)} m/s`;
+        vyLabel.style.left = `${ballCenterX - 20}px`;
+        vyLabel.style.top = vy >= 0 ? 
+          `${ballCenterY - vyLength - 15}px` : 
+          `${ballCenterY + vyLength + 5}px`;
+
+        velocityText.textContent = `${vx.toFixed(2)}, ${vy.toFixed(2)}`;
+        timeText.textContent = time.toFixed(2);
+      }, dt * 1000);
+    }
+
+    function updateResultsTable() {
+      const tableBody = document.querySelector("#resultsTable tbody");
+      tableBody.innerHTML = "";
+      results.forEach(result => {
+        const row = `
+          <tr>
+            <td>${result.cliffHeight}</td>
+            <td>${result.angle}</td>
+            <td>${result.initialVelocity}</td>
+            <td>${result.horizontalRange}</td>
+            <td>${result.maxHeight}</td>
+            <td>${result.flightTime}</td>
+          </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    function saveResultsToFile() {
+      const data = JSON.stringify(results, null, 2);
+      const blob = new Blob([data], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'cliff_experiment_results.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById('cliffHeight').addEventListener('change', function() {
+      let value = parseFloat(this.value);
+      if (value > MAX_CLIFF_HEIGHT) this.value = MAX_CLIFF_HEIGHT;
+      if (value < 1) this.value = 1;
+    });
+  </script>
+</body>
+</html>

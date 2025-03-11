@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magnetic Field Simulation</title>
+  <style>
+    body {
+      background-color: #f2f2f2;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #333;
+    }
+    #controls {
+      margin: 20px auto;
+      padding: 15px;
+      max-width: 600px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label {
+      display: inline-block;
+      width: 180px;
+      text-align: right;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 120px;
+      padding: 6px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 16px;
+      margin: 0 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    canvas {
+      border: 2px solid #333;
+      background-color: #fff;
+      display: block;
+      margin: 20px auto;
+      border-radius: 4px;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #333;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+    #output {
+      margin: 10px;
+      font-size: 16px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Magnetic Field Simulation</h1>
+
+  <div id="controls">
+    <div>
+      <label for="simType">Simulation Type:</label>
+      <select id="simType" onchange="updateSimulation()">
+        <option value="wire">Straight Wire</option>
+        <option value="solenoid">Solenoid</option>
+        <option value="loop">Current Loop</option>
+        <option value="force">Force (F B I)</option>
+      </select>
+    </div>
+    <div>
+      <label for="current">Current (I, A):</label>
+      <input type="number" id="current" step="0.1" min="0.1" max="10" value="5" oninput="updateSimulation()">
+    </div>
+    <div>
+      <!-- Reverted back to Distance -->
+      <label for="distance">Distance (r/z, m):</label>
+      <input type="number" id="distance" step="0.01" min="0.01" max="1" value="0.1" oninput="updateSimulation()">
+    </div>
+    <div id="angleInput" style="display: none;">
+      <label for="theta">Angle (θ, degrees):</label>
+      <input type="number" id="theta" step="1" min="0" max="180" value="90" oninput="updateSimulation()">
+    </div>
+    <div id="output">
+      Magnetic Field Strength (B): <span id="bField">Calculating...</span> T
+      <br>
+      <!-- Changed to show magnetic field equation for wire, force equation for force -->
+      <span id="equationOutput" style="display: none;">Equation: <span id="equationValue"></span></span>
+      <span id="forceOutput" style="display: none;">Force Equation: <span id="forceValue">F = B I L sin θ</span></span>
+    </div>
+  </div>
+
+  <canvas id="fieldCanvas" width="800" height="600"></canvas>
+
+  <div>
+    <button onclick="recordResult()">Record Result</button>
+    <button onclick="saveResultsToFile()">Save Results</button>
+  </div>
+
+  <h2>Simulation Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Current (A)</th>
+        <th>Distance (m)</th>
+        <th>B Field (T)</th>
+        <th>Force (N)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div>
+    <a href="magnetism.html" class="back-button">Back to Magnetism</a>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("fieldCanvas");
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const mu0 = 4 * Math.PI * 1e-7; // Magnetic constant (T·m/A)
+    let simulationType = "wire";
+    let current = 5;
+    let distance = 0.1;
+    let theta = 90; // Default angle in degrees
+    let results = [];
+
+    const simTypeSelect = document.getElementById("simType");
+    const currentInput = document.getElementById("current");
+    const distanceInput = document.getElementById("distance");
+    const thetaInput = document.getElementById("theta");
+    const angleInputDiv = document.getElementById("angleInput");
+    const bFieldOutput = document.getElementById("bField");
+    const equationOutput = document.getElementById("equationOutput");
+    const equationValue = document.getElementById("equationValue");
+    const forceOutput = document.getElementById("forceOutput");
+    const forceValue = document.getElementById("forceValue");
+
+    function updateSimulation() {
+      simulationType = simTypeSelect.value;
+      current = Math.max(0.1, parseFloat(currentInput.value));
+      distance = Math.max(0.01, parseFloat(distanceInput.value)); // Now represents distance (r) for wire
+      theta = parseFloat(thetaInput.value) || 90;
+      angleInputDiv.style.display = simulationType === "force" ? "block" : "none";
+      forceOutput.style.display = simulationType === "force" ? "block" : "none";
+      equationOutput.style.display = simulationType === "wire" ? "block" : "none";
+      calculateFields();
+    }
+
+    function calculateFields() {
+      let bField, force = 0;
+      if (simulationType === "wire") {
+        bField = (mu0 * current) / (2 * Math.PI * distance);
+        // Display the magnetic field equation with current values
+        equationValue.textContent = `B = (${mu0.toExponential(2)} × ${current.toFixed(2)}) / (2π × ${distance.toFixed(2)}) = ${bField.toExponential(2)} T`;
+      } else if (simulationType === "solenoid") {
+        const n = 100; // Turns per meter
+        bField = mu0 * n * current;
+      } else if (simulationType === "loop") {
+        const R = 0.05; // Loop radius (m)
+        bField = (mu0 * current * R * R) / (2 * Math.pow(R * R + distance * distance, 1.5));
+      } else if (simulationType === "force") {
+        bField = 0.01; // External B field (T), fixed for simplicity
+        const L = 0.2; // Fixed wire length for force calculation
+        const thetaRad = theta * (Math.PI / 180);
+        force = current * L * bField * Math.sin(thetaRad);
+        // Display the force equation with current values
+        forceValue.textContent = `F = ${bField.toFixed(4)} × ${current.toFixed(2)} × ${L.toFixed(2)} × sin(${theta}°) = ${force.toFixed(4)} N`;
+      }
+      bFieldOutput.textContent = bField.toExponential(2);
+      return { bField, force };
+    }
+
+    function drawStraightWire(timestamp) {
+      ctx.clearRect(0, 0, width, height);
+      const centerX = width / 2;
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, height);
+      ctx.stroke();
+
+      // Current direction (upward)
+      ctx.fillStyle = "green";
+      ctx.font = "16px Arial";
+      ctx.fillText("I ↑", centerX - 30, height / 2);
+      drawArrow(centerX, height / 2 - 20, -Math.PI / 2); // Upward arrow
+
+      const spacing = 40;
+      const numParticles = 20;
+      for (let r = spacing; r <= 300; r += spacing) {
+        ctx.beginPath();
+        ctx.arc(centerX, height / 2, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = `rgba(0, 0, 255, ${1 - r / 300})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        for (let i = 0; i < numParticles; i++) {
+          const angle = (i / numParticles) * 2 * Math.PI + (timestamp * current * 0.001) / r;
+          const x = centerX + r * Math.cos(angle);
+          const y = height / 2 + r * Math.sin(angle);
+          drawArrow(x, y, angle + Math.PI / 2); // CCW field
+        }
+      }
+    }
+
+    function drawSolenoid(timestamp) {
+      ctx.clearRect(0, 0, width, height);
+      const centerX = width / 2;
+      const topY = height / 2 - 100;
+      const bottomY = height / 2 + 100;
+      const widthS = 200;
+      const numTurns = 10;
+      const turnSpacing = (bottomY - topY) / numTurns;
+
+      // Draw solenoid coils
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      for (let i = 0; i <= numTurns; i++) {
+        const y = topY + i * turnSpacing;
+        ctx.beginPath();
+        ctx.moveTo(centerX - widthS / 2, y);
+        ctx.lineTo(centerX + widthS / 2, y);
+        ctx.stroke();
+      }
+
+      // Current direction (right to left)
+      ctx.fillStyle = "green";
+      ctx.font = "16px Arial";
+      ctx.fillText("I →", centerX - widthS / 2 - 40, height / 2);
+      drawArrow(centerX - widthS / 2 - 20, height / 2, 0); // Rightward arrow
+
+      // Internal field lines
+      const numArrows = 8;
+      for (let y = topY + turnSpacing; y < bottomY; y += turnSpacing) {
+        ctx.strokeStyle = "rgba(0, 0, 255, 0.8)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX - widthS / 2 + 20, y);
+        ctx.lineTo(centerX + widthS / 2 - 20, y);
+        ctx.stroke();
+
+        for (let i = 0; i < numArrows; i++) {
+          const x = centerX - widthS / 2 + 20 + ((i + (timestamp * current * 0.001)) % 1) * (widthS - 40);
+          drawArrow(x, y, 0); // Rightward field
+        }
+      }
+
+      // External field lines (curved)
+      ctx.strokeStyle = "rgba(0, 0, 255, 0.3)";
+      ctx.beginPath();
+      ctx.arc(centerX, topY, 80, Math.PI, 2 * Math.PI);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(centerX, bottomY, 80, 0, Math.PI);
+      ctx.stroke();
+    }
+
+    function drawLoop(timestamp) {
+      ctx.clearRect(0, 0, width, height);
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const loopR = 80;
+
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, loopR, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Current direction (CCW)
+      ctx.fillStyle = "green";
+      ctx.font = "16px Arial";
+      ctx.fillText("I (CCW)", centerX - 40, centerY - loopR - 10);
+      drawArrow(centerX + loopR, centerY, 0); // Rightward arrow on loop
+
+      const numLines = 6;
+      for (let i = 1; i <= numLines; i++) {
+        const offset = i * 40;
+        ctx.strokeStyle = `rgba(0, 0, 255, ${1 - i / numLines})`;
+        ctx.lineWidth = 1;
+
+        // Above loop
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY - loopR);
+        ctx.bezierCurveTo(centerX - offset, centerY - offset * 1.5, centerX - offset, centerY + offset * 1.5, centerX, centerY + loopR);
+        ctx.stroke();
+
+        // Below loop
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY + loopR);
+        ctx.bezierCurveTo(centerX + offset, centerY + offset * 1.5, centerX + offset, centerY - offset * 1.5, centerX, centerY - loopR);
+        ctx.stroke();
+
+        // Animated arrows
+        const numArrows = 4;
+        for (let j = 0; j < numArrows; j++) {
+          const t = (j / numArrows + (timestamp * current * 0.001)) % 1;
+          const x1 = centerX + offset * (t - 0.5) * 2;
+          const y1 = centerY - loopR + t * (loopR * 2);
+          drawArrow(x1, y1, t < 0.5 ? -Math.PI / 2 : Math.PI / 2);
+        }
+      }
+    }
+
+    function drawForce(timestamp) {
+      ctx.clearRect(0, 0, width, height);
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const wireLength = 300; // Fixed wire length for visualization
+
+      // External B field (upward, along y-axis)
+      ctx.strokeStyle = "purple";
+      ctx.lineWidth = 2;
+      for (let x = centerX - 200; x <= centerX + 200; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, centerY - 100);
+        ctx.lineTo(x, centerY + 100);
+        ctx.stroke();
+        drawArrow(x, centerY, -Math.PI / 2); // Upward B
+      }
+      ctx.fillStyle = "purple";
+      ctx.fillText("B ↑", centerX - 220, centerY);
+
+      // Wire with current, rotated by theta
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate((theta - 90) * (Math.PI / 180));
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-wireLength / 2, 0);
+      ctx.lineTo(wireLength / 2, 0);
+      ctx.stroke();
+      ctx.fillStyle = "green";
+      ctx.fillText("I", -wireLength / 2 - 30, -10);
+      drawArrow(wireLength / 2 - 20, 0, 0);
+      ctx.restore();
+
+      // Force (perpendicular to both I and B)
+      const force = calculateFields().force;
+      const arrowLen = Math.min(100, Math.abs(force) * 1000);
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      const forceAngle = (theta * (Math.PI / 180));
+      const forceX = centerX + arrowLen * Math.cos(forceAngle);
+      const forceY = centerY - arrowLen * Math.sin(forceAngle);
+      ctx.lineTo(forceX, forceY);
+      ctx.stroke();
+      drawArrow(forceX, forceY, forceAngle - Math.PI / 2);
+      ctx.fillStyle = "red";
+      ctx.fillText("F", forceX + 20, forceY - 10);
+    }
+
+    function drawArrow(x, y, angle) {
+      const len = 15;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(len, 0);
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(len, 0);
+      ctx.lineTo(len - 5, 3);
+      ctx.lineTo(len - 5, -3);
+      ctx.closePath();
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function recordResult() {
+      const { bField, force } = calculateFields();
+      results.push({
+        type: simulationType,
+        current: current.toFixed(2),
+        distance: distance.toFixed(2),
+        bField: bField.toExponential(2),
+        force: simulationType === "force" ? force.toFixed(4) : "N/A"
+      });
+      updateResultsTable();
+    }
+
+    function updateResultsTable() {
+      const tableBody = document.querySelector("#resultsTable tbody");
+      tableBody.innerHTML = "";
+      results.forEach(result => {
+        const row = 
+          `<tr>
+            <td>${result.type.charAt(0).toUpperCase() + result.type.slice(1)}</td>
+            <td>${result.current}</td>
+            <td>${result.distance}</td>
+            <td>${result.bField}</td>
+            <td>${result.force}</td>
+          </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    function saveResultsToFile() {
+      const data = JSON.stringify(results, null, 2);
+      const blob = new Blob([data], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'magnetic_field_results.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    let lastTime = null;
+    function animate(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const deltaTime = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      if (simulationType === "wire") {
+        drawStraightWire(timestamp);
+      } else if (simulationType === "solenoid") {
+        drawSolenoid(timestamp);
+      } else if (simulationType === "loop") {
+        drawLoop(timestamp);
+      } else if (simulationType === "force") {
+        drawForce(timestamp);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    updateSimulation();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

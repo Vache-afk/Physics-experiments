@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Series Circuit Experiment</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .circuit-controls {
+      margin-bottom: 20px;
+    }
+    .circuit-controls label {
+      margin: 0 10px;
+    }
+    #circuitCanvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+      margin-bottom: 20px;
+    }
+    .back-button {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue; /* Changed to blue to match previous examples */
+      text-decoration: none;
+      border: none; /* Adjusted to match previous examples */
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+    .formula {
+      font-style: italic;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Series Circuit Experiment</h1>
+
+  <!-- Controls for R1, R2, R3 -->
+  <div class="circuit-controls">
+    <label>R1 (Ω):
+      <input type="number" id="r1" value="5" min="1" max="10" oninput="updateCircuitParams()"/>
+    </label>
+    <label>R2 (Ω):
+      <input type="number" id="r2" value="5" min="1" max="10" oninput="updateCircuitParams()"/>
+    </label>
+    <label>R3 (Ω):
+      <input type="number" id="r3" value="5" min="1" max="10" oninput="updateCircuitParams()"/>
+    </label>
+    <p>
+      Total Resistance: <span id="totalResistance">15</span> Ω
+      <br>
+      <span class="formula">Formula: R<sub>total</sub> = R<sub>1</sub> + R<sub>2</sub> + R<sub>3</sub></span>
+    </p>
+    <p>
+      Total Current (I = 10V / R<sub>total</sub>): <span id="totalCurrent">0.67</span> A
+    </p>
+  </div>
+
+  <!-- Canvas for drawing the circuit and simulating electron flow -->
+  <canvas id="circuitCanvas" width="600" height="300"></canvas>
+
+  <!-- Buttons for recording and saving -->
+  <div>
+    <button onclick="recordResult()">Record Result</button>
+    <button onclick="saveResultsToFile()">Save Results</button>
+  </div>
+
+  <!-- Results Table -->
+  <h2>Simulation Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>R1 (Ω)</th>
+        <th>R2 (Ω)</th>
+        <th>R3 (Ω)</th>
+        <th>Total Resistance (Ω)</th>
+        <th>Total Current (A)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Back buttons -->
+  <div>
+    <a href="electricity.html" class="back-button">Back to Electricity Experiments</a>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+
+  <script>
+    // --- Global Circuit Parameters ---
+    let r1 = 5, r2 = 5, r3 = 5;
+    let totalResistance = r1 + r2 + r3;
+    let current = 10 / totalResistance;  // Using a fixed 10 V battery
+    let electronSpeed = current * 100;
+    let results = []; // Array to store results
+
+    function updateCircuitParams() {
+      r1 = parseFloat(document.getElementById("r1").value);
+      r2 = parseFloat(document.getElementById("r2").value);
+      r3 = parseFloat(document.getElementById("r3").value);
+
+      totalResistance = r1 + r2 + r3;
+      document.getElementById("totalResistance").textContent = totalResistance;
+
+      current = 10 / totalResistance;
+      document.getElementById("totalCurrent").textContent = current.toFixed(2);
+
+      electronSpeed = current * 100;
+    }
+
+    // Record current circuit parameters into the results array
+    function recordResult() {
+      results.push({
+        r1: r1.toFixed(2),
+        r2: r2.toFixed(2),
+        r3: r3.toFixed(2),
+        totalResistance: totalResistance.toFixed(2),
+        totalCurrent: current.toFixed(2)
+      });
+      updateResultsTable();
+    }
+
+    // Update the results table
+    function updateResultsTable() {
+      const tableBody = document.querySelector("#resultsTable tbody");
+      tableBody.innerHTML = "";
+
+      results.forEach(result => {
+        const row = `
+          <tr>
+            <td>${result.r1}</td>
+            <td>${result.r2}</td>
+            <td>${result.r3}</td>
+            <td>${result.totalResistance}</td>
+            <td>${result.totalCurrent}</td>
+          </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    // Save results to a file
+    function saveResultsToFile() {
+      const data = JSON.stringify(results, null, 2);
+      const blob = new Blob([data], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'series_circuit_results.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    updateCircuitParams();
+
+    // --- Canvas Setup ---
+    const canvas = document.getElementById("circuitCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const P0 = { x: 100, y: 50 };
+    const P1 = { x: 500, y: 50 };
+    const P2 = { x: 500, y: 250 };
+    const P3 = { x: 100, y: 250 };
+
+    function dist(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    const L0 = dist(P0, P1);
+    const L1 = dist(P1, P2);
+    const L2 = dist(P2, P3);
+    const L3 = dist(P3, P0);
+    const totalPathLength = L0 + L1 + L2 + L3;
+
+    function getPointAt(t) {
+      if (t < L0) {
+        const ratio = t / L0;
+        return { x: P0.x + (P1.x - P0.x) * ratio, y: P0.y };
+      } else if (t < L0 + L1) {
+        const t2 = t - L0;
+        const ratio = t2 / L1;
+        return { x: P1.x, y: P1.y + (P2.y - P1.y) * ratio };
+      } else if (t < L0 + L1 + L2) {
+        const t3 = t - (L0 + L1);
+        const ratio = t3 / L2;
+        return { x: P2.x - (P2.x - P3.x) * ratio, y: P2.y };
+      } else {
+        const t4 = t - (L0 + L1 + L2);
+        const ratio = t4 / L3;
+        return { x: P3.x, y: P3.y - (P3.y - P0.y) * ratio };
+      }
+    }
+
+    // --- Electron Setup ---
+    const numElectrons = 5;
+    const electrons = [];
+    for (let i = 0; i < numElectrons; i++) {
+      electrons.push({ t: (i * totalPathLength) / numElectrons });
+    }
+
+    // --- Drawing the Circuit ---
+    function drawCircuit() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(P0.x, P0.y);
+      ctx.lineTo(P1.x, P1.y);
+      ctx.lineTo(P2.x, P2.y);
+      ctx.lineTo(P3.x, P3.y);
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "black";
+      const leftSideMidX = P3.x;
+      const leftSideMidY = (P3.y + P0.y) / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(leftSideMidX - 20, leftSideMidY);
+      ctx.lineTo(leftSideMidX + 20, leftSideMidY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(leftSideMidX - 10, leftSideMidY + 10);
+      ctx.lineTo(leftSideMidX + 10, leftSideMidY + 10);
+      ctx.stroke();
+
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "black";
+      ctx.fillText("10V", leftSideMidX - 10, leftSideMidY - 5);
+
+      ctx.strokeStyle = "orange";
+      ctx.lineWidth = 2;
+      const resistorWidth = 40;
+      const resistorHeight = 20;
+
+      function drawResistor(fraction, label) {
+        const xPos = P0.x + L0 * fraction - resistorWidth / 2;
+        const yPos = P0.y - resistorHeight / 2;
+        ctx.strokeRect(xPos, yPos, resistorWidth, resistorHeight);
+        ctx.fillStyle = "black";
+        ctx.fillText(label, xPos + 5, yPos + resistorHeight - 5);
+      }
+      drawResistor(0.25, "R1");
+      drawResistor(0.50, "R2");
+      drawResistor(0.75, "R3");
+    }
+
+    // --- Animation Loop ---
+    let lastTime = null;
+
+    function animateCircuit(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const deltaTime = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      electronSpeed = current * 100;
+
+      electrons.forEach(e => {
+        e.t += electronSpeed * deltaTime;
+        if (e.t > totalPathLength) {
+          e.t -= totalPathLength;
+        }
+      });
+
+      drawCircuit();
+      electrons.forEach(e => {
+        const pos = getPointAt(e.t);
+        ctx.fillStyle = "blue";
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+
+      requestAnimationFrame(animateCircuit);
+    }
+    requestAnimationFrame(animateCircuit);
+  </script>
+</body>
+</html>

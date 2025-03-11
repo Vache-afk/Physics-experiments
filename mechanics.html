@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Physics Simulation Webpage</title>
+  <style>
+    /* CSS to style the homepage */
+    body {
+      background-color: blue;
+      color: white; /* White text for contrast */
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px; /* Space between buttons */
+      margin-top: 50px;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: lightgray;
+    }
+    /* Back button style */
+    .back-button {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Mechanics Experiments</h1>
+  <div class="button-container">
+    <!-- Free Fall Experiment -->
+    <form action="Free_Fall_experiment.html" method="get">
+      <button type="submit">1 - Free Fall Experiment</button>
+    </form>
+    <!-- Projectile Motion Experiment -->
+    <form action="Projectile_motion.html" method="get">
+      <button type="submit">2 - Projectile Motion Experiment</button>
+    </form>
+    <!-- Throwing the Ball from a Cliff -->
+    <form action="From_Cliff.html" method="get">
+      <button type="submit">3 - Throwing Ball from Cliff</button>
+    </form>
+    <!-- Collisions Experiment -->
+    <form action="Collisions.html" method="get">
+      <button type="submit">4 - Collisions Experiment</button>
+    </form>
+  </div>
+  <!-- Back to Main Page Button -->
+  <div>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+</body>
+</html>
+

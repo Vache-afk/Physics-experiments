@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Fall Experiment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #simulation {
+      position: relative;
+      width: 800px;
+      height: 400px;
+      margin: 20px auto;
+      border: 2px solid #000;
+      background-color: #f0f0f0;
+    }
+    .ball {
+      position: absolute;
+      left: 50%;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: red;
+      transform: translateX(-50%);
+    }
+    #controls {
+      margin-top: 20px;
+    }
+    #velocityDisplay {
+      margin-top: 10px;
+    }
+    /* Style for the back buttons */
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+    /* Styles for the results table */
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+    /* Style for the save button */
+    .save-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .save-button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Free Fall Experiment</h1>
+  <div id="simulation">
+    <div class="ball" id="ball"></div>
+  </div>
+  <div id="controls">
+    <label for="initialHeight">Initial Height (m):</label>
+    <input type="number" id="initialHeight" value="10" min="1" max="100">
+    <br>
+    <label for="initialVelocity">Enter Initial Velocity (m/s):</label>
+    <input type="number" id="initialVelocity" value="0" min="0">
+    <br>
+    <button onclick="startSimulation()">Start Experiment</button>
+  </div>
+  <div id="velocityDisplay">
+    <p>Vertical Velocity: <span id="velocityText">0</span> m/s</p>
+    <p>Time: <span id="timeText">0.00</span> s</p>
+  </div>
+
+  <!-- Results Table Section -->
+  <h2>Experiment Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Initial Height (m)</th>
+        <th>Initial Velocity (m/s)</th>
+        <th>Final Velocity (m/s)</th>
+        <th>Time (s)</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+
+  <!-- Save Results Button -->
+  <button class="save-button" onclick="saveResultsToFile()">Save Results</button>
+
+  <!-- Back Buttons -->
+  <div>
+    <a href="mechanics.html" class="back-button">Back to Mechanics</a>
+    <a href="index.html" class="back-button">Back to Main Page</a>
+  </div>
+
+  <script>
+    const g = 9.8; // Gravitational acceleration (m/s²)
+    const ball = document.getElementById('ball');
+    const velocityText = document.getElementById('velocityText');
+    const timeText = document.getElementById('timeText');
+    let interval;
+    let time = 0;
+    let initialHeight, initialVelocity;
+
+    // New scaling factor: 1m = 4px
+    const scaleY = 4;
+
+    // Array to store results
+    let results = [];
+
+    function startSimulation() {
+      clearInterval(interval);
+
+      initialHeight = parseFloat(document.getElementById('initialHeight').value);
+      initialVelocity = parseFloat(document.getElementById('initialVelocity').value);
+
+      time = 0;
+      let y = initialHeight; 
+      ball.style.bottom = `${y * scaleY}px`;  
+
+      interval = setInterval(() => {
+        time += 0.01;  
+
+        y = initialHeight + initialVelocity * time - 0.5 * g * time * time;
+
+        if (y <= 0) {
+          y = 0;
+          clearInterval(interval);
+
+          // Calculate final velocity when ball hits ground
+          let finalVelocity = initialVelocity - g * time;
+
+          // Store result in the array
+          results.push({
+            initialHeight: initialHeight,
+            initialVelocity: initialVelocity,
+            finalVelocity: finalVelocity.toFixed(2),
+            time: time.toFixed(2)
+          });
+
+          // Update the results table
+          updateResultsTable();
+        }
+
+        ball.style.bottom = `${y * scaleY}px`;
+
+        let currentVelocity = initialVelocity - g * time;
+
+        velocityText.textContent = currentVelocity.toFixed(2);
+        timeText.textContent = time.toFixed(2);
+      }, 10); 
+    }
+
+    // Function to update the results table
+    function updateResultsTable() {
+      const tableBody = document.querySelector("#resultsTable tbody");
+      tableBody.innerHTML = "";
+
+      results.forEach((result) => {
+        let row = "<tr>" +
+          "<td>" + result.initialHeight + "</td>" +
+          "<td>" + result.initialVelocity + "</td>" +
+          "<td>" + result.finalVelocity + "</td>" +
+          "<td>" + result.time + "</td>" +
+          "</tr>";
+        tableBody.innerHTML += row;
+      });
+    }
+
+    // Function to save results to a file
+    function saveResultsToFile() {
+      var raw = JSON.stringify(results, null, 2);
+      var file = new Blob([raw], { type: 'text/plain' });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = "sample.txt";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+</body>
+</html>

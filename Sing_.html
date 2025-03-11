@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Single-Slit Diffraction – Diagram + Intensity</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+      background-color: #f0f0f0;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #controls {
+      margin: 10px auto;
+      display: inline-block;
+      text-align: left;
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    label {
+      display: inline-block;
+      width: 120px;
+    }
+    input {
+      width: 60px;
+      margin-bottom: 5px;
+    }
+    button {
+      margin-top: 5px;
+    }
+    .diagram-section {
+      margin-top: 20px;
+    }
+    #waveCanvas, #intensityCanvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+      display: block;
+      margin: 20px auto;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: #333;
+      border: 1px solid #333;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .back-button:hover {
+      background-color: #ddd;
+    }
+    .note {
+      max-width: 800px;
+      margin: 0 auto;
+      font-size: 14px;
+      color: #555;
+      text-align: left;
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+    .equation {
+      background-color: #eee;
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 0 4px;
+      font-family: "Courier New", monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Single-Slit Diffraction</h1>
+
+  <!-- Controls for both the schematic wave diagram and the intensity plot -->
+  <div id="controls">
+    <div>
+      <label>Wave Speed:</label>
+      <input type="number" id="waveSpeed" value="2" step="0.1"> px/frame
+    </div>
+    <div>
+      <label>Wavelength:</label>
+      <input type="number" id="waveLambda" value="20" step="1"> px (diagram)
+    </div>
+    <div>
+      <label>Slit Height:</label>
+      <input type="number" id="slitHeight" value="80" step="1"> px
+    </div>
+    <hr/>
+    <div>
+      <label>Slit Width (a):</label>
+      <input type="number" id="slitWidth" value="0.0005" step="1e-6"> m
+    </div>
+    <div>
+      <label>Distance (L):</label>
+      <input type="number" id="distL" value="1" step="0.01"> m
+    </div>
+    <div>
+      <label>Wavelength (λ):</label>
+      <input type="number" id="lambdaM" value="5.5e-7" step="1e-9"> m
+    </div>
+    <button onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="note">
+    <p>
+      <strong>Top Canvas:</strong> A <em>schematic wave diagram</em> shows wavefronts (blue lines) 
+      approaching a slit from the left and arcs (red) spreading behind it. 
+      This is <u>not</u> a rigorous amplitude simulation—just a textbook-style illustration.
+    </p>
+    <p>
+      <strong>Bottom Canvas:</strong> The <em>theoretical intensity distribution</em> 
+      for single-slit diffraction (small-angle approximation). 
+      The intensity is:
+    </p>
+    <p>
+      <span class="equation">I(θ) ∝ ( sin(β) / β )²</span>, 
+      where 
+      <span class="equation">β = (π · a · θ) / λ</span>, 
+      and 
+      <span class="equation">θ = y / L</span>.
+    </p>
+  </div>
+
+  <!-- Diagram Section -->
+  <div class="diagram-section">
+    <canvas id="waveCanvas" width="800" height="300"></canvas>
+  </div>
+
+  <!-- Intensity Plot Section -->
+  <div class="diagram-section">
+    <canvas id="intensityCanvas" width="600" height="200"></canvas>
+  </div>
+
+  <div>
+    <a href="waves.html" class="back-button">Back to Waves</a>
+  </div>
+
+  <script>
+    /**************************************************************
+     * 1) Schematic Wave Diagram (Top Canvas)
+     **************************************************************/
+    const waveCanvas = document.getElementById("waveCanvas");
+    const wctx = waveCanvas.getContext("2d");
+    const waveSpeedInput = document.getElementById("waveSpeed");
+    const waveLambdaInput = document.getElementById("waveLambda");
+    const slitHeightInput = document.getElementById("slitHeight");
+
+    let waveW = waveCanvas.width;
+    let waveH = waveCanvas.height;
+    let barrierX = 300; // barrier location
+    let waveSpeed = parseFloat(waveSpeedInput.value);  // px/frame
+    let waveLambda = parseFloat(waveLambdaInput.value); // px
+    let halfSlit = parseFloat(slitHeightInput.value)/2;
+    let diagramTime = 0;
+
+    function drawBarrier() {
+      wctx.save();
+      wctx.fillStyle = '#555';
+      let slitTop = (waveH/2) - halfSlit;
+      let slitBot = (waveH/2) + halfSlit;
+      // top block
+      wctx.fillRect(barrierX, 0, 10, slitTop);
+      // bottom block
+      wctx.fillRect(barrierX, slitBot, 10, waveH - slitBot);
+      wctx.restore();
+    }
+
+    function drawIncomingWaves() {
+      // wave lines are vertical lines spaced by waveLambda
+      // offset = waveSpeed*diagramTime % waveLambda
+      let offset = (waveSpeed * diagramTime) % waveLambda;
+      wctx.save();
+      wctx.strokeStyle = 'blue';
+      wctx.lineWidth = 1;
+      for (let lineX = -waveLambda; lineX < barrierX+waveLambda; lineX += waveLambda) {
+        let actualX = lineX + offset;
+        if (actualX < 0) continue;
+        if (actualX > barrierX) break;
+        wctx.beginPath();
+        wctx.moveTo(actualX, 0);
+        wctx.lineTo(actualX, waveH);
+        wctx.stroke();
+      }
+      wctx.restore();
+    }
+
+    function drawOutgoingArcs() {
+      // arcs from multiple points in the slit
+      let arrivalTime = barrierX / waveSpeed;
+      let dtBehind = diagramTime - arrivalTime;
+      if (dtBehind < 0) return; // wave not yet at slit
+
+      let maxRadius = waveW - barrierX + 50;
+      let nMax = Math.floor(maxRadius / waveLambda);
+      wctx.save();
+      wctx.strokeStyle = 'red';
+      wctx.lineWidth = 1;
+
+      // define points in the slit
+      let top = (waveH/2) - halfSlit;
+      let bot = (waveH/2) + halfSlit;
+      
+      let N_SOURCES = 5;
+      let step = (bot - top)/(N_SOURCES-1);
+      let slitPoints = [];
+      for (let i=0; i<N_SOURCES; i++){
+        slitPoints.push({ x: barrierX, y: top + i*step });
+      }
+
+      let baseRadius = waveSpeed * dtBehind;
+      for (let sp of slitPoints){
+        for (let n=0; n<=nMax; n++){
+          let radius = baseRadius - n*waveLambda;
+          if (radius < 0) continue;
+          if (radius > maxRadius) continue;
+          wctx.beginPath();
+          wctx.arc(sp.x, sp.y, radius, -0.3*Math.PI, 0.3*Math.PI);
+          wctx.stroke();
+        }
+      }
+      wctx.restore();
+    }
+
+    function animateDiagram() {
+      wctx.clearRect(0,0,waveW,waveH);
+      drawBarrier();
+      drawIncomingWaves();
+      drawOutgoingArcs();
+      diagramTime += 1;
+      requestAnimationFrame(animateDiagram);
+    }
+
+    /**************************************************************
+     * 2) Intensity Distribution Plot (Bottom Canvas)
+     **************************************************************/
+    const intensityCanvas = document.getElementById("intensityCanvas");
+    const ictx = intensityCanvas.getContext("2d");
+    let iW = intensityCanvas.width;
+    let iH = intensityCanvas.height;
+
+    const slitWidthInput = document.getElementById("slitWidth");
+    const distLInput = document.getElementById("distL");
+    const lambdaMInput = document.getElementById("lambdaM");
+
+    function drawIntensityPlot() {
+      ictx.clearRect(0,0,iW,iH);
+
+      // get parameters
+      let a = parseFloat(slitWidthInput.value);  // m
+      let L = parseFloat(distLInput.value);      // m
+      let lam = parseFloat(lambdaMInput.value);  // m
+
+      // We'll define range of y from -3 first-minima to +3 first-minima
+      // first minimum: y_first = L * lam / a
+      let yFirst = L*lam/a;
+      let rangeFactor = 3; // show ±3 * y_first
+      let yMax = rangeFactor * yFirst;
+      let yMin = -yMax;
+      let scaleX = iW/(yMax - yMin); // px per meter
+      let midX = iW/2;
+
+      // I(y) ∝ (sin β / β)², β = π a y / (λ L)
+      // We'll normalize intensity so I(0) = 1 => max height = iH
+
+      ictx.beginPath();
+      for (let px=0; px<iW; px++){
+        let yVal = (px - midX)/scaleX;  
+        let beta = Math.PI * a * yVal / (lam * L);
+        let Irel = (beta===0)? 1 : Math.pow(Math.sin(beta)/beta, 2);
+        let py = iH - Irel*iH; 
+        if(px===0) ictx.moveTo(px, py);
+        else ictx.lineTo(px, py);
+      }
+      ictx.strokeStyle = 'green';
+      ictx.lineWidth = 2;
+      ictx.stroke();
+
+      // center line
+      ictx.strokeStyle = 'red';
+      ictx.beginPath();
+      ictx.moveTo(midX, 0);
+      ictx.lineTo(midX, iH);
+      ictx.stroke();
+
+      // Mark minima lines: single-slit minima at sin(θ_m) = ±m λ / a => θ_m ~ ±m λ/a (small angle)
+      // => y_m = L * θ_m = ± m L λ / a
+      // We'll do m=1..4
+      ictx.save();
+      ictx.strokeStyle = '#999';
+      ictx.lineWidth = 1;
+      ictx.fillStyle = '#333';
+      ictx.font = "12px Arial";
+
+      function ordinalSuffix(m){
+        if(m===1) return "1st";
+        if(m===2) return "2nd";
+        if(m===3) return "3rd";
+        return m+"th";
+      }
+      for(let m=1; m<=4; m++){
+        let y_m = m * L * lam / a; // position of m-th minimum
+        if(y_m > yMax) break; // outside range
+        let xPlus = midX + y_m*scaleX;
+        let xMinus = midX - y_m*scaleX;
+        // line at xPlus
+        ictx.beginPath();
+        ictx.moveTo(xPlus, 0);
+        ictx.lineTo(xPlus, iH);
+        ictx.stroke();
+        // label
+        ictx.fillText(`${ordinalSuffix(m)} min`, xPlus+2, 12);
+
+        // line at xMinus
+        ictx.beginPath();
+        ictx.moveTo(xMinus, 0);
+        ictx.lineTo(xMinus, iH);
+        ictx.stroke();
+        ictx.fillText(`${ordinalSuffix(m)} min`, xMinus+2, 12);
+      }
+      ictx.restore();
+
+      // Axis labels: x => angle(θ), y => intensity
+      // We'll interpret x coordinate as angle = yVal / L => ( px-midX)/scaleX / L
+      ictx.save();
+      ictx.fillStyle = "black";
+      ictx.font = "14px Arial";
+      // X-axis label
+      ictx.fillText("Angle (θ)", iW/2 - 30, iH - 5);
+
+      // Y-axis label (rotated)
+      ictx.translate(15, iH/2);
+      ictx.rotate(-Math.PI/2);
+      ictx.fillText("Intensity", 0, 0);
+      ictx.restore();
+    }
+
+    function resetAll(){
+      // read wave diagram inputs
+      waveSpeed = parseFloat(waveSpeedInput.value);
+      waveLambda = parseFloat(waveLambdaInput.value);
+      halfSlit = parseFloat(slitHeightInput.value)/2;
+      diagramTime = 0;
+
+      // read intensity inputs and draw
+      drawIntensityPlot();
+    }
+
+    // Initialize
+    resetAll();
+    animateDiagram();
+  </script>
+</body>
+</html>
+
+
+
