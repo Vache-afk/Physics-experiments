@@ -53,6 +53,13 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+    /* Added styles for login buttons */
+    .login-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px; /* Adds space between the buttons */
+      margin-top: 15px; /* Adds space above the buttons */
+    }
   </style>
 </head>
 <body>
@@ -60,12 +67,14 @@
 
   <!-- Login Section -->
   <div class="login-container" id="loginSection">
-    <h2>Login</h2>
+    <h2>Enter Your Details</h2>
     <form id="loginForm">
-      <input type="text" id="username" placeholder="Username"><br>
-      <input type="password" id="password" placeholder="Password"><br>
-      <button type="button" onclick="login()">Login</button>
-      <button type="button" onclick="guestLogin()">Continue as Guest</button>
+      <input type="text" id="name" placeholder="Enter Your Name"><br>
+      <input type="text" id="grade" placeholder="Enter Your Grade"><br>
+      <div class="login-buttons">
+        <button type="button" onclick="login()">Enter</button>
+        <button type="button" onclick="guestLogin()">Continue as Guest</button>
+      </div>
     </form>
   </div>
 
@@ -82,47 +91,52 @@
       <form action="waves.html" method="get">
         <button type="submit">Waves</button>
       </form>
+      <!-- Moved Logout button inside the button-container -->
+      <button onclick="logout()">Logout</button>
     </div>
-    <button onclick="logout()">Logout</button>
   </div>
 
   <script>
     // Check if user is already logged in
     window.onload = function () {
       const storedUser = localStorage.getItem("loggedInUser");
-      if (storedUser) {
-        showMainContent(storedUser);
+      const storedGrade = localStorage.getItem("userGrade");
+      if (storedUser && storedGrade) {
+        showMainContent(storedUser, storedGrade);
       }
     };
 
     function login() {
-      var username = document.getElementById("username").value;
-      var password = document.getElementById("password").value;
+      var name = document.getElementById("name").value;
+      var grade = document.getElementById("grade").value;
 
-      if (username && password) {
-        alert("Login successful! Welcome, " + username + "!");
-        localStorage.setItem("loggedInUser", username); // Save login state
-        showMainContent(username);
+      if (name && grade) {
+        alert("Welcome, " + name + " from Grade " + grade + "!");
+        localStorage.setItem("loggedInUser", name); 
+        localStorage.setItem("userGrade", grade); 
+        showMainContent(name, grade);
       } else {
-        alert("Please enter a username and password.");
+        alert("Please enter both your Name and Grade.");
       }
     }
 
     function guestLogin() {
       alert("Continuing as Guest...");
-      localStorage.setItem("loggedInUser", "Guest"); // Save guest state
-      showMainContent("Guest");
+      localStorage.setItem("loggedInUser", "Guest");
+      localStorage.setItem("userGrade", "N/A"); 
+      showMainContent("Guest", "N/A");
     }
 
-    function showMainContent(user) {
-      document.getElementById("welcomeMessage").innerText = "Welcome, " + user + "! Select a Physics Experiment";
+    function showMainContent(user, grade) {
+      document.getElementById("welcomeMessage").innerText = "Welcome, " + user + " (Grade: " + grade + ")! Select a Physics Experiment";
       document.getElementById("loginSection").style.display = "none";
       document.getElementById("mainContent").style.display = "block";
     }
 
     function logout() {
-      localStorage.removeItem("loggedInUser"); // Clear login state
-      location.reload(); // Refresh page to show login form again
+      localStorage.removeItem("loggedInUser"); 
+      localStorage.removeItem("userGrade"); 
+      location.reload(); 
     }
   </script>
 </body>
