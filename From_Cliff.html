@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Throwing Ball from Cliff</title>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,16 +35,6 @@
       height: 30px;
       border-radius: 50%;
       background-color: red;
-    }
-    .arrow {
-      position: absolute;
-      background-color: blue;
-      transition: all 16ms ease; /* Smooth transitions */
-    }
-    .arrow-label {
-      position: absolute;
-      font-size: 12px;
-      color: black;
     }
     #controls {
       margin-top: 20px;
@@ -79,17 +71,47 @@
     .back-button:hover {
       background-color: lightgray;
     }
+    #equationDisplay {
+      margin: 20px auto;
+      font-size: 18px;
+    }
+    .arrow {
+      stroke: black;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+    .velocity-text {
+      font-size: 12px;
+      fill: black;
+    }
   </style>
 </head>
 <body>
   <h1>Throwing Ball from Cliff Experiment</h1>
+
+  <div id="equationDisplay">
+    <p>The position of the ball is calculated using the following equations:</p>
+    <p>Horizontal Position: \[ x = v_{x0} t \]</p>
+    <p>Vertical Position: \[ y = h_0 + v_{y0} t - \frac{1}{2} g t^2 \]</p>
+    <p>Horizontal Velocity: \[ v_x = v_{x0} \]</p>
+    <p>Vertical Velocity: \[ v_y = v_{y0} - g t \]</p>
+    <p>Where \( x \) and \( y \) are the horizontal and vertical positions, \( v_x \) and \( v_y \) are the horizontal and vertical velocities, \( v_{x0} \) and \( v_{y0} \) are the initial horizontal and vertical velocities, \( h_0 \) is the cliff height, \( g \) is the gravitational acceleration (9.81 m/s²), and \( t \) is time.</p>
+  </div>
+
   <div id="simulation">
     <div id="cliff"></div>
+    <svg id="svgCanvas" width="800" height="500" style="position: absolute; top: 0; left: 0;">
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" />
+        </marker>
+      </defs>
+      <line id="vxArrow" class="arrow" x1="0" y1="0" x2="0" y2="0" />
+      <line id="vyArrow" class="arrow" x1="0" y1="0" x2="0" y2="0" />
+      <text id="vxText" class="velocity-text" x="0" y="0"></text>
+      <text id="vyText" class="velocity-text" x="0" y="0"></text>
+    </svg>
     <div class="ball" id="ball"></div>
-    <div id="vxArrow" class="arrow"></div>
-    <div id="vyArrow" class="arrow"></div>
-    <div id="vxLabel" class="arrow-label"></div>
-    <div id="vyLabel" class="arrow-label"></div>
   </div>
   <div id="controls">
     <label for="cliffHeight">Cliff Height (m, max 200):</label>
@@ -107,7 +129,7 @@
     <label for="velocity">Initial Velocity (m/s):</label>
     <input type="number" id="velocity" value="20" min="1">
     <br>
-    <button onclick="startSimulation()">Start Experiment</button>
+    <button id="startButton">Start Experiment</button>
     <button onclick="saveResultsToFile()">Save Results</button>
   </div>
   <div id="velocityDisplay">
@@ -136,22 +158,84 @@
   </div>
 
   <script>
-    const g = 9.81; // gravitational acceleration (m/s²)
+    const g = 9.81;
     const simulationArea = document.getElementById('simulation');
     const ball = document.getElementById('ball');
     const velocityText = document.getElementById('velocityText');
     const timeText = document.getElementById('timeText');
+    const startButton = document.getElementById('startButton');
+    const vxArrow = document.getElementById('vxArrow');
+    const vyArrow = document.getElementById('vyArrow');
+    const vxText = document.getElementById('vxText');
+    const vyText = document.getElementById('vyText');
 
-    const scaleX = 0.5;  // 1 meter = 0.5 pixels horizontally
-    const scaleY = 1;    // 1 meter = 1 pixel vertically
-    const arrowScale = 3; // Increased for visibility
+    const scaleX = 0.5;
+    const scaleY = 1;
     const MAX_CLIFF_HEIGHT = 200;
+    const ARROW_SCALE = 5;
+    const ballRadius = 15;
 
-    let interval, time, angle, initialVelocity, cliffHeight, vx, vy, x, y;
+    let animationFrame;
+    let lastTime = 0;
+    let time = 0;
+    let angle;
+    let initialVelocity;
+    let cliffHeight;
+    let vx, vy;
+    let x = 0, y = 0;
+    let isRunning = false;
     let results = [];
 
+    startButton.addEventListener('click', () => {
+      console.log("Start button clicked");
+      startSimulation();
+    });
+
+    function updateVelocityArrows() {
+      const ballX = x * scaleX;
+      const ballY = y * scaleY;
+      const ballCenterX = ballX + ballRadius;
+      const ballCenterY = simulationArea.clientHeight - (ballY + ballRadius);
+
+      // Horizontal velocity arrow (vx)
+      vxArrow.setAttribute('x1', ballCenterX);
+      vxArrow.setAttribute('y1', ballCenterY);
+      const vxEndX = ballCenterX + (vx * ARROW_SCALE);
+      vxArrow.setAttribute('x2', vxEndX);
+      vxArrow.setAttribute('y2', ballCenterY);
+
+      // Vertical velocity arrow (vy)
+      vyArrow.setAttribute('x1', ballCenterX);
+      vyArrow.setAttribute('y1', ballCenterY);
+      const vyEndY = ballCenterY - (vy * ARROW_SCALE);
+      vyArrow.setAttribute('x2', ballCenterX);
+      vyArrow.setAttribute('y2', vyEndY);
+
+      // Update velocity text
+      vxText.setAttribute('x', vxEndX + (vx >= 0 ? 5 : -50));
+      vxText.setAttribute('y', ballCenterY + 5);
+      vxText.textContent = `vx: ${vx.toFixed(1)} m/s`;
+
+      vyText.setAttribute('x', ballCenterX + 5);
+      vyText.setAttribute('y', vyEndY + (vy >= 0 ? -5 : 15));
+      vyText.textContent = `vy: ${vy.toFixed(1)} m/s`;
+    }
+
     function startSimulation() {
-      clearInterval(interval);
+      console.log("startSimulation called");
+
+      if (isRunning) {
+        cancelAnimationFrame(animationFrame);
+        isRunning = false;
+      }
+
+      time = 0;
+      x = 0;
+      y = 0;
+      ball.style.left = '0px';
+      ball.style.bottom = '0px';
+      velocityText.textContent = '0, 0';
+      timeText.textContent = '0.00';
 
       cliffHeight = Math.min(
         Math.max(1, parseFloat(document.getElementById('cliffHeight').value)),
@@ -162,101 +246,81 @@
       angle = parseFloat(document.getElementById('angle').value);
       initialVelocity = parseFloat(document.getElementById('velocity').value);
 
+      if (isNaN(initialVelocity) || initialVelocity <= 0) {
+        alert("Please enter a valid initial velocity greater than 0.");
+        console.log("Invalid velocity:", initialVelocity);
+        return;
+      }
+
       const radianAngle = angle * Math.PI / 180;
       vx = initialVelocity * Math.cos(radianAngle);
       vy = initialVelocity * Math.sin(radianAngle);
       x = 0;
       y = cliffHeight;
-      time = 0;
 
       ball.style.left = `${x * scaleX}px`;
       ball.style.bottom = `${y * scaleY}px`;
+      updateVelocityArrows();
 
-      let maxHeight = cliffHeight;
-      const dt = 0.016; // 16ms timestep for smoothness
+      lastTime = performance.now();
+      isRunning = true;
+      animate(lastTime);
+    }
 
-      interval = setInterval(() => {
-        time += dt;
+    function animate(currentTime) {
+      if (!isRunning) {
+        console.log("Animation stopped");
+        return;
+      }
 
-        x += vx * dt;
-        vy -= g * dt;
-        y += vy * dt;
+      const deltaTime = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
 
-        if (y > maxHeight) maxHeight = y;
+      time += deltaTime;
 
-        let scaledX = x * scaleX;
-        let scaledY = y * scaleY;
+      x += vx * deltaTime;
+      vy -= g * deltaTime;
+      y += vy * deltaTime;
 
-        const maxX = simulationArea.clientWidth - ball.clientWidth;
-        const maxY = simulationArea.clientHeight - ball.clientHeight;
+      let maxHeight = Math.max(cliffHeight, y);
 
-        if (scaledX > maxX) {
-          scaledX = maxX;
-          x = scaledX / scaleX;
-          vx = 0;
-        }
+      let scaledX = x * scaleX;
+      let scaledY = y * scaleY;
 
-        if (scaledY < 0) {
-          scaledY = 0;
-          y = 0;
-          clearInterval(interval);
+      const maxX = simulationArea.clientWidth - ball.clientWidth;
+      const maxY = simulationArea.clientHeight - ball.clientHeight;
 
-          results.push({
-            cliffHeight: cliffHeight.toFixed(2),
-            angle: angle,
-            initialVelocity: initialVelocity,
-            horizontalRange: x.toFixed(2),
-            maxHeight: maxHeight.toFixed(2),
-            flightTime: time.toFixed(2)
-          });
-          updateResultsTable();
-        }
+      if (scaledX > maxX) {
+        scaledX = maxX;
+        x = scaledX / scaleX;
+        vx = 0;
+      }
 
-        ball.style.left = `${scaledX}px`;
-        ball.style.bottom = `${scaledY}px`;
+      if (scaledY < 0) {
+        scaledY = 0;
+        y = 0;
+        isRunning = false;
 
-        const ballCenterX = scaledX + ball.clientWidth / 2;
-        const ballCenterY = simulationArea.clientHeight - scaledY - ball.clientHeight / 2;
+        results.push({
+          cliffHeight: cliffHeight.toFixed(2),
+          angle: angle,
+          initialVelocity: initialVelocity,
+          horizontalRange: x.toFixed(2),
+          maxHeight: maxHeight.toFixed(2),
+          flightTime: time.toFixed(2)
+        });
+        updateResultsTable();
+        return;
+      }
 
-        const vxArrow = document.getElementById('vxArrow');
-        const vyArrow = document.getElementById('vyArrow');
-        const vxLabel = document.getElementById('vxLabel');
-        const vyLabel = document.getElementById('vyLabel');
+      ball.style.left = `${scaledX}px`;
+      ball.style.bottom = `${scaledY}px`;
+      updateVelocityArrows();
 
-        // Horizontal arrow (right when positive, left when negative)
-        const vxLength = Math.abs(vx) * arrowScale;
-        vxArrow.style.width = `${vxLength}px`;
-        vxArrow.style.height = '4px';
-        vxArrow.style.left = `${ballCenterX}px`;
-        vxArrow.style.top = `${ballCenterY}px`;
-        vxArrow.style.transformOrigin = 'left center';
-        vxArrow.style.transform = `rotate(${vx < 0 ? 180 : 0}deg)`;
+      velocityText.textContent = `${vx.toFixed(2)}, ${vy.toFixed(2)}`;
+      timeText.textContent = time.toFixed(2);
 
-        // Vertical arrow (up when positive, down when negative)
-        const vyLength = Math.abs(vy) * arrowScale;
-        vyArrow.style.width = '4px';
-        vyArrow.style.height = `${vyLength}px`;
-        vyArrow.style.left = `${ballCenterX - 2}px`;
-        vyArrow.style.top = vy >= 0 ? 
-          `${ballCenterY - vyLength}px` : 
-          `${ballCenterY}px`;
-        vyArrow.style.transformOrigin = vy >= 0 ? 'center bottom' : 'center top';
-        vyArrow.style.transform = vy >= 0 ? 'rotate(0deg)' : 'rotate(0deg)';
-
-        // Labels
-        vxLabel.textContent = `vx: ${vx.toFixed(1)} m/s`;
-        vxLabel.style.left = `${ballCenterX + (vx >= 0 ? vxLength + 5 : -60)}px`;
-        vxLabel.style.top = `${ballCenterY - 5}px`;
-
-        vyLabel.textContent = `vy: ${vy.toFixed(1)} m/s`;
-        vyLabel.style.left = `${ballCenterX - 20}px`;
-        vyLabel.style.top = vy >= 0 ? 
-          `${ballCenterY - vyLength - 15}px` : 
-          `${ballCenterY + vyLength + 5}px`;
-
-        velocityText.textContent = `${vx.toFixed(2)}, ${vy.toFixed(2)}`;
-        timeText.textContent = time.toFixed(2);
-      }, dt * 1000);
+      animationFrame = requestAnimationFrame(animate);
     }
 
     function updateResultsTable() {
