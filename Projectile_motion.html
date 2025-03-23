@@ -165,8 +165,8 @@
     let vx, vy;
     let x = 0, y = 0;
 
-    const scaleX = 3; // 1 pixel = 0.333 meters horizontally
-    const scaleY = 2; // 1 pixel = 0.5 meters vertically
+    const scaleX = 1;  // Adjusted: 1 pixel = 1 meter horizontally (was 3)
+    const scaleY = 0.5; // Adjusted: 1 pixel = 2 meters vertically (was 2)
     const ballRadius = 15; // Half of ball's width/height
 
     let results = [];
@@ -239,8 +239,8 @@
         const ballCenterX = scaledX + ballRadius;
         const ballCenterY = simulationArea.clientHeight - (scaledY + ballRadius);
 
-        // Scale down the arrows by using a smaller scaling factor (e.g., 5 instead of 10)
-        const arrowScale = 5;
+        // Adjusted: Smaller arrows by reducing the scale from 5 to 2
+        const arrowScale = 2;
 
         vxArrow.setAttribute('x1', ballCenterX);
         vxArrow.setAttribute('y1', ballCenterY);
