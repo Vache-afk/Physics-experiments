@@ -36,7 +36,6 @@
     button:hover {  
       background-color: #005fa3;
     }
-    /* Login Form Styles */
     .login-container {
       background: white;
       padding: 20px;
@@ -46,19 +45,48 @@
       margin: auto;
       margin-top: 50px;
     }
-    input {
+    input, textarea {
       width: 90%;
       padding: 10px;
       margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-    /* Added styles for login buttons */
+    .guide, .feedback-container {
+      text-align: left;
+      font-size: 14px;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      display: none; /* Hidden by default */
+    }
+    .toggle-button {
+      background-color: #4CAF50;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .toggle-button:hover {
+      background-color: #45a049;
+    }
+    .logout-button {
+      margin-top: 40px;
+    }
+    .feedback-container {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
     .login-buttons {
       display: flex;
       flex-direction: column;
-      gap: 15px; /* Adds space between the buttons */
-      margin-top: 15px; /* Adds space above the buttons */
+      gap: 20px; /* Increased spacing between Enter and Continue as Guest */
     }
   </style>
 </head>
@@ -76,6 +104,19 @@
         <button type="button" onclick="guestLogin()">Continue as Guest</button>
       </div>
     </form>
+    <button class="toggle-button" onclick="toggleGuide()">Show Guide</button>
+    <div class="guide" id="guideSection">
+      <h3>How to Use the Physics Simulation Program:</h3>
+      <ol>
+        <li><strong>Login:</strong> Enter your name and grade, then click "Enter" to log in, or choose "Continue as Guest" to proceed without details.</li>
+        <li><strong>Select an Experiment:</strong> From the main menu, choose a physics area (Mechanics, Electricity, or Waves) by clicking the corresponding button.</li>
+        <li><strong>Run Simulations:</strong> In each experiment, input parameters like velocity, angle, or resistance, then click "Start" to see the simulation in action.</li>
+        <li><strong>View Results:</strong> Observe real-time animations (e.g., projectile motion arcs, wave patterns) and check displayed equations for clarity.</li>
+        <li><strong>Save Data:</strong> After running an experiment, click the "Save" button to download your results as a JSON file for later review.</li>
+        <li><strong>Provide Feedback:</strong> Use the feedback section to share your thoughts on the program to help improve it.</li>
+        <li><strong>Logout:</strong> When finished, click "Logout" to return to the login page.</li>
+      </ol>
+    </div>
   </div>
 
   <!-- Main Content (Hidden until login) -->
@@ -91,8 +132,17 @@
       <form action="waves.html" method="get">
         <button type="submit">Waves</button>
       </form>
-      <!-- Moved Logout button inside the button-container -->
-      <button onclick="logout()">Logout</button>
+    </div>
+    <button class="logout-button" onclick="logout()">Logout</button>
+
+    <!-- Feedback Section -->
+    <button class="toggle-button" onclick="toggleFeedback()">Show Feedback</button>
+    <div class="feedback-container" id="feedbackSection">
+      <h3>Feedback</h3>
+      <form id="feedbackForm" action="mailto:vachekha16@gmail.com" method="post" enctype="text/plain">
+        <textarea id="feedback" name="feedback" rows="4" placeholder="Share your thoughts..."></textarea><br>
+        <button type="submit" onclick="submitFeedback()">Send Feedback</button>
+      </form>
     </div>
   </div>
 
@@ -137,6 +187,43 @@
       localStorage.removeItem("loggedInUser"); 
       localStorage.removeItem("userGrade"); 
       location.reload(); 
+    }
+
+    // Toggle Guide Visibility
+    function toggleGuide() {
+      const guideSection = document.getElementById("guideSection");
+      const button = document.querySelector("#loginSection .toggle-button");
+      if (guideSection.style.display === "none" || guideSection.style.display === "") {
+        guideSection.style.display = "block";
+        button.innerText = "Hide Guide";
+      } else {
+        guideSection.style.display = "none";
+        button.innerText = "Show Guide";
+      }
+    }
+
+    // Toggle Feedback Visibility
+    function toggleFeedback() {
+      const feedbackSection = document.getElementById("feedbackSection");
+      const button = document.querySelector("#mainContent .toggle-button");
+      if (feedbackSection.style.display === "none" || feedbackSection.style.display === "") {
+        feedbackSection.style.display = "block";
+        button.innerText = "Hide Feedback";
+      } else {
+        feedbackSection.style.display = "none";
+        button.innerText = "Show Feedback";
+      }
+    }
+
+    // Feedback Submission
+    function submitFeedback() {
+      const feedback = document.getElementById("feedback").value;
+      if (feedback.trim() === "") {
+        alert("Please enter your feedback before submitting.");
+        return false;
+      }
+      alert("Thank you for your feedback!");
+      document.getElementById("feedbackForm").submit();
     }
   </script>
 </body>
