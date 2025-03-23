@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Free Fall Experiment</title>
+  <!-- Include MathJax for rendering equations -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,7 +36,6 @@
     #velocityDisplay {
       margin-top: 10px;
     }
-    /* Style for the back buttons */
     .back-button {
       display: inline-block;
       margin-top: 20px;
@@ -51,7 +53,6 @@
     .back-button:hover {
       background-color: lightgray;
     }
-    /* Styles for the results table */
     table {
       width: 80%;
       margin: 20px auto;
@@ -67,7 +68,6 @@
     th {
       background-color: #ddd;
     }
-    /* Style for the save button */
     .save-button {
       margin-top: 20px;
       padding: 10px 20px;
@@ -82,11 +82,40 @@
     .save-button:hover {
       background-color: #45a049;
     }
+    #equationDisplay {
+      margin: 20px auto;
+      font-size: 18px;
+    }
+    .arrow {
+      stroke: black;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+    .velocity-text {
+      font-size: 12px;
+      fill: black;
+    }
   </style>
 </head>
 <body>
   <h1>Free Fall Experiment</h1>
+
+  <div id="equationDisplay">
+    <p>The position of the ball is calculated using the equation:</p>
+    \[ y = h_0 + v_0 t - \frac{1}{2} g t^2 \]
+    <p>Where \( y \) is the height, \( h_0 \) is the initial height, \( v_0 \) is the initial velocity, \( g \) is the gravitational acceleration (9.8 m/s²), and \( t \) is time.</p>
+  </div>
+
   <div id="simulation">
+    <svg id="svgCanvas" width="800" height="400" style="position: absolute; top: 0; left: 0;">
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" />
+        </marker>
+      </defs>
+      <line id="vyArrow" class="arrow" x1="0" y1="0" x2="0" y2="0" />
+      <text id="vyText" class="velocity-text" x="0" y="0"></text>
+    </svg>
     <div class="ball" id="ball"></div>
   </div>
   <div id="controls">
@@ -103,7 +132,6 @@
     <p>Time: <span id="timeText">0.00</span> s</p>
   </div>
 
-  <!-- Results Table Section -->
   <h2>Experiment Results</h2>
   <table id="resultsTable">
     <thead>
@@ -118,29 +146,54 @@
     </tbody>
   </table>
 
-  <!-- Save Results Button -->
   <button class="save-button" onclick="saveResultsToFile()">Save Results</button>
 
-  <!-- Back Buttons -->
   <div>
     <a href="mechanics.html" class="back-button">Back to Mechanics</a>
     <a href="index.html" class="back-button">Back to Main Page</a>
   </div>
 
   <script>
-    const g = 9.8; // Gravitational acceleration (m/s²)
+    const g = 9.8;
+    const simulationArea = document.getElementById('simulation');
     const ball = document.getElementById('ball');
     const velocityText = document.getElementById('velocityText');
     const timeText = document.getElementById('timeText');
+    const vyArrow = document.getElementById('vyArrow');
+    const vyText = document.getElementById('vyText');
+
+    const scaleY = 4;
+    const ARROW_SCALE = 3; // Reduced from 5 to 3 to make the arrow smaller
+    const ballRadius = 15;
+
     let interval;
     let time = 0;
     let initialHeight, initialVelocity;
+    let y = 0;
+    let vy = 0;
 
-    // New scaling factor: 1m = 4px
-    const scaleY = 4;
-
-    // Array to store results
     let results = [];
+
+    function updateVelocityArrow() {
+      // Ball's center in CSS coordinates
+      const ballX = simulationArea.clientWidth / 2; // Center horizontally
+      const ballY = y * scaleY;
+      // Convert to SVG coordinates (Y-axis is inverted)
+      const ballCenterX = ballX;
+      const ballCenterY = simulationArea.clientHeight - (ballY + ballRadius);
+
+      // Vertical velocity arrow (vy)
+      vyArrow.setAttribute('x1', ballCenterX);
+      vyArrow.setAttribute('y1', ballCenterY);
+      const vyEndY = ballCenterY - (vy * ARROW_SCALE);
+      vyArrow.setAttribute('x2', ballCenterX);
+      vyArrow.setAttribute('y2', vyEndY);
+
+      // Update velocity text
+      vyText.setAttribute('x', ballCenterX + 5);
+      vyText.setAttribute('y', vyEndY + (vy >= 0 ? -5 : 15));
+      vyText.textContent = `vy: ${vy.toFixed(1)} m/s`;
+    }
 
     function startSimulation() {
       clearInterval(interval);
@@ -149,22 +202,23 @@
       initialVelocity = parseFloat(document.getElementById('initialVelocity').value);
 
       time = 0;
-      let y = initialHeight; 
-      ball.style.bottom = `${y * scaleY}px`;  
+      y = initialHeight;
+      vy = initialVelocity;
+      ball.style.bottom = `${y * scaleY}px`;
+      updateVelocityArrow();
 
       interval = setInterval(() => {
-        time += 0.01;  
+        time += 0.01;
 
         y = initialHeight + initialVelocity * time - 0.5 * g * time * time;
+        vy = initialVelocity - g * time;
 
         if (y <= 0) {
           y = 0;
           clearInterval(interval);
 
-          // Calculate final velocity when ball hits ground
           let finalVelocity = initialVelocity - g * time;
 
-          // Store result in the array
           results.push({
             initialHeight: initialHeight,
             initialVelocity: initialVelocity,
@@ -172,20 +226,17 @@
             time: time.toFixed(2)
           });
 
-          // Update the results table
           updateResultsTable();
         }
 
         ball.style.bottom = `${y * scaleY}px`;
+        updateVelocityArrow();
 
-        let currentVelocity = initialVelocity - g * time;
-
-        velocityText.textContent = currentVelocity.toFixed(2);
+        velocityText.textContent = vy.toFixed(2);
         timeText.textContent = time.toFixed(2);
-      }, 10); 
+      }, 10);
     }
 
-    // Function to update the results table
     function updateResultsTable() {
       const tableBody = document.querySelector("#resultsTable tbody");
       tableBody.innerHTML = "";
@@ -201,14 +252,13 @@
       });
     }
 
-    // Function to save results to a file
     function saveResultsToFile() {
       var raw = JSON.stringify(results, null, 2);
       var file = new Blob([raw], { type: 'text/plain' });
 
       const link = document.createElement("a");
       link.href = URL.createObjectURL(file);
-      link.download = "sample.txt";
+      link.download = "free_fall_results.txt";
       link.click();
       URL.revokeObjectURL(link.href);
     }
