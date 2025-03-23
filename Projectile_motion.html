@@ -28,6 +28,11 @@
       border-radius: 50%;
       background-color: red;
     }
+    #equations {
+      margin: 20px auto;
+      width: 600px;
+      text-align: center;
+    }
     #controls {
       margin-top: 20px;
     }
@@ -66,11 +71,39 @@
     th {
       background-color: #ddd;
     }
+    .arrow {
+      stroke: black;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+    .velocity-text {
+      font-size: 12px;
+      fill: black;
+    }
   </style>
 </head>
 <body>
   <h1>Projectile Motion Experiment</h1>
+  <div id="equations">
+    <p>Path Equations:</p>
+    <p>x(t) = v₀cos(θ)t</p>
+    <p>y(t) = v₀sin(θ)t - ½gt²</p>
+    <p>Equations for Velocities:</p>
+    <p>vₓ = v₀cos(θ)</p>
+    <p>vᵧ = v₀sin(θ) - gt</p>
+  </div>
   <div id="simulation">
+    <svg id="svgCanvas" width="600" height="400" style="position: absolute; top: 0; left: 0;">
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" />
+        </marker>
+      </defs>
+      <line id="vxArrow" class="arrow" x1="0" y1="0" x2="0" y2="0" />
+      <line id="vyArrow" class="arrow" x1="0" y1="0" x2="0" y2="0" />
+      <text id="vxText" class="velocity-text" x="0" y="0"></text>
+      <text id="vyText" class="velocity-text" x="0" y="0"></text>
+    </svg>
     <div class="ball" id="ball"></div>
   </div>
   <div id="controls">
@@ -93,7 +126,6 @@
     <p>Time: <span id="timeText">0.00</span> s</p>
   </div>
 
-  <!-- Results Table -->
   <h2>Simulation Results</h2>
   <table id="resultsTable">
     <thead>
@@ -111,18 +143,21 @@
 
   <button onclick="saveResultsToFile()">Save Results</button>
 
-  <!-- Back Buttons -->
   <div>
     <a href="mechanics.html" class="back-button">Back to Mechanics</a>
     <a href="index.html" class="back-button">Back to Main Page</a>
   </div>
 
   <script>
-    const g = 9.8; 
+    const g = 9.8;
     const simulationArea = document.getElementById('simulation');
     const ball = document.getElementById('ball');
     const velocityText = document.getElementById('velocityText');
     const timeText = document.getElementById('timeText');
+    const vxArrow = document.getElementById('vxArrow');
+    const vyArrow = document.getElementById('vyArrow');
+    const vxText = document.getElementById('vxText');
+    const vyText = document.getElementById('vyText');
     let interval;
     let time = 0;
     let angle;
@@ -130,11 +165,10 @@
     let vx, vy;
     let x = 0, y = 0;
 
-    // Scaling factors
-    const scaleX = 6; 
-    const scaleY = 25;
+    const scaleX = 3; // 1 pixel = 0.333 meters horizontally
+    const scaleY = 2; // 1 pixel = 0.5 meters vertically
+    const ballRadius = 15; // Half of ball's width/height
 
-    // Array to store results
     let results = [];
 
     function startSimulation() {
@@ -163,6 +197,7 @@
         let scaledY = y * scaleY;
 
         const maxX = simulationArea.clientWidth - ball.clientWidth;
+        const maxY = simulationArea.clientHeight - ball.clientHeight;
 
         if (scaledX > maxX) {
           scaledX = maxX;
@@ -177,7 +212,6 @@
           let horizontalRange = x;
           let flightTime = time;
 
-          // Store result in the array
           results.push({
             angle: angle,
             initialVelocity: initialVelocity,
@@ -189,6 +223,10 @@
           updateResultsTable();
         }
 
+        if (scaledY > maxY) {
+          scaledY = maxY; // Prevent ball from going above the simulation area
+        }
+
         ball.style.left = `${scaledX}px`;
         ball.style.bottom = `${scaledY}px`;
 
@@ -196,6 +234,32 @@
         const verticalVelocity = vy - g * time;
         velocityText.textContent = `${horizontalVelocity.toFixed(2)}, ${verticalVelocity.toFixed(2)}`;
         timeText.textContent = time.toFixed(2);
+
+        // Update velocity arrows and text
+        const ballCenterX = scaledX + ballRadius;
+        const ballCenterY = simulationArea.clientHeight - (scaledY + ballRadius);
+
+        // Scale down the arrows by using a smaller scaling factor (e.g., 5 instead of 10)
+        const arrowScale = 5;
+
+        vxArrow.setAttribute('x1', ballCenterX);
+        vxArrow.setAttribute('y1', ballCenterY);
+        vxArrow.setAttribute('x2', ballCenterX + horizontalVelocity * arrowScale);
+        vxArrow.setAttribute('y2', ballCenterY);
+
+        vyArrow.setAttribute('x1', ballCenterX);
+        vyArrow.setAttribute('y1', ballCenterY);
+        vyArrow.setAttribute('x2', ballCenterX);
+        vyArrow.setAttribute('y2', ballCenterY - verticalVelocity * arrowScale);
+
+        // Update velocity text
+        vxText.setAttribute('x', ballCenterX + horizontalVelocity * arrowScale + 5);
+        vxText.setAttribute('y', ballCenterY + 5);
+        vxText.textContent = `vₓ: ${horizontalVelocity.toFixed(2)} m/s`;
+
+        vyText.setAttribute('x', ballCenterX + 5);
+        vyText.setAttribute('y', ballCenterY - verticalVelocity * arrowScale - 5);
+        vyText.textContent = `vᵧ: ${verticalVelocity.toFixed(2)} m/s`;
       }, 10);
     }
 
@@ -216,7 +280,7 @@
     }
 
     function saveResultsToFile() {
-      var raw = JSON.stringify(results, null, 2); 
+      var raw = JSON.stringify(results, null, 2);
       var file = new Blob([raw], { type: 'text/plain' });
 
       const link = document.createElement("a");
