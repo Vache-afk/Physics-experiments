@@ -76,6 +76,17 @@
       font-size: 18px;
       text-align: left;
       display: inline-block;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    #equationDisplay p {
+      margin: 10px 0;
+    }
+    #equationDisplay em {
+      color: #555;
+      font-size: 16px;
     }
     .arrow {
       stroke: black;
@@ -92,14 +103,31 @@
   <h1>Throwing Ball from Cliff Experiment</h1>
 
   <div id="equationDisplay">
-    <p><strong>Path Equations:</strong></p>
-    <p>\( x(t) = v_0 \cos(\theta) t \)</p>
-    <p>\( y(t) = h_0 + v_0 \sin(\theta) t - \frac{1}{2} g t^2 \)</p>
-    <p><strong>Equations for Velocities:</strong></p>
-    <p>\( V_x = v_0 \cos(\theta) \)</p>
-    <p>\( V_y = v_0 \sin(\theta) - g t \)</p>
-    <p><strong>Where:</strong></p>
-    <p>\( v_0 \): initial velocity (m/s), \( \theta \): launch angle (degrees), \( h_0 \): cliff height (m), \( g \): gravitational acceleration (9.81 m/s\(^2\)), \( t \): time (s)</p>
+    <p><strong>Equations of Motion for the Ball:</strong></p>
+    <p><strong>Horizontal Position:</strong> \( x(t) = v_0 \cos(\theta) \cdot t \)</p>
+    <p style="text-align: left; margin-left: 20px;"><em>The ball moves horizontally at a constant speed, determined by the initial velocity \( v_0 \) and the angle \( \theta \). There’s no horizontal acceleration, so the position increases linearly with time.</em></p>
+    
+    <p><strong>Vertical Position:</strong> \( y(t) = h_0 + v_0 \sin(\theta) \cdot t - \frac{1}{2} g t^2 \)</p>
+    <p style="text-align: left; margin-left: 20px;"><em>The ball’s vertical position starts at the cliff height \( h_0 \). It initially moves upward due to the vertical component of the velocity (\( v_0 \sin(\theta) \)), but gravity (\( g \)) pulls it downward, causing the \( -\frac{1}{2} g t^2 \) term.</em></p>
+    
+    <p><strong>Horizontal Velocity:</strong> \( v_x = v_0 \cos(\theta) \)</p>
+    <p style="text-align: left; margin-left: 20px;"><em>The horizontal velocity remains constant throughout the flight because gravity only acts vertically, not horizontally.</em></p>
+    
+    <p><strong>Vertical Velocity:</strong> \( v_y = v_0 \sin(\theta) - g t \)</p>
+    <p style="text-align: left; margin-left: 20px;"><em>The vertical velocity starts at \( v_0 \sin(\theta) \) and decreases over time as gravity (\( g \)) acts downward, reducing the upward speed until the ball starts falling.</em></p>
+    
+    <p><strong>Variables Explained:</strong></p>
+    <ul style="text-align: left; display: inline-block;">
+      <li>\( x(t) \): Horizontal position of the ball at time \( t \) (meters)</li>
+      <li>\( y(t) \): Vertical position of the ball at time \( t \) (meters)</li>
+      <li>\( v_x \): Horizontal velocity (constant, in m/s)</li>
+      <li>\( v_y \): Vertical velocity (changes due to gravity, in m/s)</li>
+      <li>\( v_0 \): Initial speed of the ball (m/s)</li>
+      <li>\( \theta \): Launch angle (degrees)</li>
+      <li>\( h_0 \): Initial height of the cliff (meters)</li>
+      <li>\( g \): Acceleration due to gravity (\( 9.81 \, \text{m/s}^2 \))</li>
+      <li>\( t \): Time since the ball was thrown (seconds)</li>
+    </ul>
   </div>
 
   <div id="simulation">
@@ -254,8 +282,8 @@
 
       // Calculate initial velocities
       const radianAngle = angle * Math.PI / 180;
-      v_x0 = initialVelocity * Math.cos(radianAngle);
-      v_y0 = initialVelocity * Math.sin(radianAngle);
+      v_x0 = initialVelocity * Math.cos(radianAngle); // v_x0 = v_0 * cos(θ)
+      v_y0 = initialVelocity * Math.sin(radianAngle); // v_y0 = v_0 * sin(θ)
 
       // Set initial position
       x = 0;
