@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Throwing Ball from Cliff</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chhtml.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -77,11 +77,11 @@
     }
     .arrow {
       stroke: black;
-      stroke-width: 2;
+      stroke-width: 1; /* Thinner stroke for smaller appearance */
       marker-end: url(#arrowhead);
     }
     .velocity-text {
-      font-size: 12px;
+      font-size: 10px; /* Smaller text */
       fill: black;
     }
   </style>
@@ -102,8 +102,8 @@
     <div id="cliff"></div>
     <svg id="svgCanvas" width="800" height="500" style="position: absolute; top: 0; left: 0;">
       <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" />
+        <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto">
+          <polygon points="0 0, 4 1.5, 0 3" />
         </marker>
       </defs>
       <line id="vxArrow" class="arrow" x1="0" y1="0" x2="0" y2="0" />
@@ -172,7 +172,7 @@
     const scaleX = 0.5;
     const scaleY = 1;
     const MAX_CLIFF_HEIGHT = 200;
-    const ARROW_SCALE = 5;
+    const ARROW_SCALE = 1.5; // Reduced to 1.5 for very small arrows
     const ballRadius = 15;
 
     let animationFrame;
@@ -207,18 +207,21 @@
       // Vertical velocity arrow (vy)
       vyArrow.setAttribute('x1', ballCenterX);
       vyArrow.setAttribute('y1', ballCenterY);
-      const vyEndY = ballCenterY - (vy * ARROW_SCALE);
+      let vyEndY = ballCenterY - (vy * ARROW_SCALE);
+      // Prevent vy arrow from going below the simulation box
+      if (vyEndY > simulationArea.clientHeight) vyEndY = simulationArea.clientHeight;
+      if (vyEndY < 0) vyEndY = 0;
       vyArrow.setAttribute('x2', ballCenterX);
       vyArrow.setAttribute('y2', vyEndY);
 
       // Update velocity text
-      vxText.setAttribute('x', vxEndX + (vx >= 0 ? 5 : -50));
+      vxText.setAttribute('x', vxEndX + (vx >= 0 ? 5 : -30)); // Adjusted for smaller arrows
       vxText.setAttribute('y', ballCenterY + 5);
-      vxText.textContent = `vx: ${vx.toFixed(1)} m/s`;
+      vxText.textContent = `vx: ${vx.toFixed(1)}`;
 
       vyText.setAttribute('x', ballCenterX + 5);
-      vyText.setAttribute('y', vyEndY + (vy >= 0 ? -5 : 15));
-      vyText.textContent = `vy: ${vy.toFixed(1)} m/s`;
+      vyText.setAttribute('y', vyEndY + (vy >= 0 ? -5 : 10)); // Adjusted for smaller arrows
+      vyText.textContent = `vy: ${vy.toFixed(1)}`;
     }
 
     function startSimulation() {
