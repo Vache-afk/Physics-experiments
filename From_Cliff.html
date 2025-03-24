@@ -113,21 +113,21 @@
   <div id="equationDisplay">
     <div class="equation-group">
       <div class="equation-title">Position Equations (Projectile Motion):</div>
-      <p>\[ \text{Horizontal position: } x(t) = v_0 \cdot \cos(\theta) \cdot t \]</p>
-      <p>\[ \text{Vertical position: } y(t) = h_0 + v_0 \cdot \sin(\theta) \cdot t - \frac{1}{2} g t^2 \]</p>
+      <p>\[ \text{Horizontal position: } x(t) = v_0 \cosθ \cdot t \]</p>
+      <p>\[ \text{Vertical position: } y(t) = h_0 + v_0 \sinθ \cdot t - \frac{1}{2} g t^2 \]</p>
     </div>
     
     <div class="equation-group">
       <div class="equation-title">Velocity Equations:</div>
-      <p>\[ \text{Horizontal velocity (constant): } v_x = v_0 \cdot \cos(\theta) \]</p>
-      <p>\[ \text{Vertical velocity (changes with time): } v_y(t) = v_0 \cdot \sin(\theta) - g \cdot t \]</p>
+      <p>\[ \text{Horizontal velocity (constant): } v_x = v_0 \cosθ \]</p>
+      <p>\[ \text{Vertical velocity (changes with time): } v_y(t) = v_0 \sinθ - g t \]</p>
     </div>
     
     <div class="equation-group">
       <div class="equation-title">Key Results:</div>
-      <p>\[ \text{Time of flight: } t_{\text{flight}} = \frac{v_0 \sin(\theta) + \sqrt{(v_0 \sin(\theta))^2 + 2 g h_0}}{g} \]</p>
-      <p>\[ \text{Maximum height: } y_{\text{max}} = h_0 + \frac{(v_0 \sin(\theta))^2}{2g} \]</p>
-      <p>\[ \text{Horizontal range: } R = v_0 \cos(\theta) \cdot t_{\text{flight}} \]</p>
+      <p>\[ \text{Time of flight: } t_{\text{flight}} = \frac{v_0 \sinθ + \sqrt{(v_0 \sinθ)^2 + 2 g h_0}}{g} \]</p>
+      <p>\[ \text{Maximum height: } y_{\text{max}} = h_0 + \frac{(v_0 \sinθ)^2}{2g} \]</p>
+      <p>\[ \text{Horizontal range: } R = v_0 \cosθ \cdot t_{\text{flight}} \]</p>
     </div>
     
     <div class="equation-group">
@@ -138,7 +138,7 @@
         <li>\( v_x \): Horizontal velocity (m/s) - constant</li>
         <li>\( v_y(t) \): Vertical velocity (m/s) - changes with time</li>
         <li>\( v_0 \): Initial speed (m/s)</li>
-        <li>\( \theta \): Launch angle (degrees from horizontal)</li>
+        <li>\( θ \): Launch angle (degrees from horizontal)</li>
         <li>\( h_0 \): Initial cliff height (meters)</li>
         <li>\( g \): Acceleration due to gravity (\( 9.81 \, \text{m/s}^2 \))</li>
         <li>\( t \): Time (seconds)</li>
@@ -146,6 +146,7 @@
     </div>
   </div>
 
+  <!-- Rest of your HTML remains the same -->
   <div id="simulation">
     <div id="cliff"></div>
     <svg id="svgCanvas" width="800" height="500" style="position: absolute; top: 0; left: 0;">
@@ -299,8 +300,8 @@
 
       // Calculate initial velocity components
       const radianAngle = angle * Math.PI / 180; // Convert degrees to radians
-      v_x0 = initialVelocity * Math.cos(radianAngle); // Horizontal component: v₀·cosθ
-      v_y0 = initialVelocity * Math.sin(radianAngle); // Vertical component: v₀·sinθ
+      v_x0 = initialVelocity * Math.cos(radianAngle); // Horizontal component: v₀cosθ
+      v_y0 = initialVelocity * Math.sin(radianAngle); // Vertical component: v₀sinθ
 
       // Set initial position (top of cliff)
       x = 0;
@@ -326,9 +327,9 @@
       time += deltaTime;
 
       // Calculate current position using projectile motion equations
-      x = v_x0 * time; // Horizontal position: x = v₀·cosθ·t
-      const vy = v_y0 - (g * time); // Vertical velocity: v_y = v₀·sinθ - g·t
-      y = cliffHeight + (v_y0 * time) - (0.5 * g * time * time); // Vertical position: y = h₀ + v₀·sinθ·t - ½g·t²
+      x = v_x0 * time; // Horizontal position: x = v₀cosθ·t
+      const vy = v_y0 - (g * time); // Vertical velocity: v_y = v₀sinθ - g·t
+      y = cliffHeight + (v_y0 * time) - (0.5 * g * time * time); // Vertical position: y = h₀ + v₀sinθ·t - ½g·t²
       
       // Track maximum height reached
       maxHeight = Math.max(maxHeight, y);
