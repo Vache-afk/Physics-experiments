@@ -96,7 +96,6 @@
     .back-buttons-container {
       margin-top: 20px;
     }
-    /* Style for equation display */
     #equationDisplay {
       margin: 20px auto;
       font-size: 18px;
@@ -202,6 +201,7 @@
     const dt = 0.02;
     let simulationRunning = false;
     let simulationInterval;
+    let hasCollided = false; // Flag to ensure results are saved only once per collision
 
     let results = [];
 
@@ -216,6 +216,7 @@
 
       ball1.x = 100;
       ball2.x = 700;
+      hasCollided = false; // Reset collision flag on simulation start
 
       simulationRunning = true;
       simulationInterval = setInterval(simulateStep, dt * 1000);
@@ -224,10 +225,12 @@
     function simulateStep() {
       if (!simulationRunning) return;
 
+      // Update positions
       ball1.x += v1 * dt * 50;
       ball2.x += v2 * dt * 50;
 
-      if (ball1.x + ball1.r >= ball2.x - ball2.r) {
+      // Check for collision and ensure results are saved only once
+      if (ball1.x + ball1.r >= ball2.x - ball2.r && !hasCollided) {
         let overlap = (ball1.x + ball1.r) - (ball2.x - ball2.r);
         ball1.x -= overlap / 2;
         ball2.x += overlap / 2;
@@ -235,12 +238,13 @@
         let v1_initial = v1;
         let v2_initial = v2;
 
+        // Calculate final velocities based on collision type
         if (collisionType === "elastic") {
           let v1_new = ((m1 - m2) / (m1 + m2)) * v1 + (2 * m2 / (m1 + m2)) * v2;
           let v2_new = (2 * m1 / (m1 + m2)) * v1 + ((m2 - m1) / (m1 + m2)) * v2;
           v1 = v1_new;
           v2 = v2_new;
-        } else {
+        } else { // Inelastic (perfectly inelastic)
           let v_final = (m1 * v1 + m2 * v2) / (m1 + m2);
           v1 = v_final;
           v2 = v_final;
@@ -249,6 +253,7 @@
         let totalMomentum = m1 * v1 + m2 * v2;
         let totalKE = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2;
 
+        // Save results only once when collision occurs
         results.push({
           mass1: m1,
           initialVelocity1: v1_initial,
@@ -262,8 +267,10 @@
         });
 
         updateResultsTable();
+        hasCollided = true; // Prevent further saves until simulation restarts
       }
 
+      // Update momentum and energy display
       let totalMomentum = m1 * v1 + m2 * v2;
       let totalKE = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2;
       momentumOutput.innerHTML = "Total Momentum: " + totalMomentum.toFixed(2) + " kg·m/s";
@@ -271,6 +278,7 @@
 
       drawSimulation();
 
+      // Stop simulation if velocities are negligible
       if (Math.abs(v1) < 0.01 && Math.abs(v2) < 0.01) {
         clearInterval(simulationInterval);
         simulationRunning = false;
@@ -316,7 +324,7 @@
 
       const link = document.createElement("a");
       link.href = URL.createObjectURL(file);
-      link.download = "sample.txt";
+      link.download = "collision_results.txt";
       link.click();
       URL.revokeObjectURL(link.href);
     }
