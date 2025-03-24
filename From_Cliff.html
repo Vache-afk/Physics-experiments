@@ -77,11 +77,11 @@
     }
     .arrow {
       stroke: black;
-      stroke-width: 1; /* Thinner stroke for smaller appearance */
+      stroke-width: 1;
       marker-end: url(#arrowhead);
     }
     .velocity-text {
-      font-size: 10px; /* Smaller text */
+      font-size: 10px;
       fill: black;
     }
   </style>
@@ -91,11 +91,22 @@
 
   <div id="equationDisplay">
     <p>The position of the ball is calculated using the following equations:</p>
-    <p>Horizontal Position: \[ x = v_{x0} t \]</p>
-    <p>Vertical Position: \[ y = h_0 + v_{y0} t - \frac{1}{2} g t^2 \]</p>
-    <p>Horizontal Velocity: \[ v_x = v_{x0} \]</p>
-    <p>Vertical Velocity: \[ v_y = v_{y0} - g t \]</p>
-    <p>Where \( x \) and \( y \) are the horizontal and vertical positions, \( v_x \) and \( v_y \) are the horizontal and vertical velocities, \( v_{x0} \) and \( v_{y0} \) are the initial horizontal and vertical velocities, \( h_0 \) is the cliff height, \( g \) is the gravitational acceleration (9.81 m/s²), and \( t \) is time.</p>
+    <p>Horizontal Position: \( x = v_{x0} t \)</p>
+    <p>Vertical Position: \( y = h_0 + v_{y0} t - \frac{1}{2} g t^2 \)</p>
+    <p>Horizontal Velocity: \( v_x = v_{x0} \)</p>
+    <p>Vertical Velocity: \( v_y = v_{y0} - g t \)</p>
+    <p>Where:</p>
+    <ul style="text-align: left; display: inline-block;">
+        <li>\( x \): horizontal position (m)</li>
+        <li>\( y \): vertical position (m)</li>
+        <li>\( v_x \): horizontal velocity (m/s)</li>
+        <li>\( v_y \): vertical velocity (m/s)</li>
+        <li>\( v_{x0} \): initial horizontal velocity (m/s)</li>
+        <li>\( v_{y0} \): initial vertical velocity (m/s)</li>
+        <li>\( h_0 \): initial cliff height (m)</li>
+        <li>\( g \): gravitational acceleration (9.81 m/s²)</li>
+        <li>\( t \): time (s)</li>
+    </ul>
   </div>
 
   <div id="simulation">
@@ -172,74 +183,68 @@
     const scaleX = 0.5;
     const scaleY = 1;
     const MAX_CLIFF_HEIGHT = 200;
-    const ARROW_SCALE = 1.5; // Reduced to 1.5 for very small arrows
+    const ARROW_SCALE = 1.5;
     const ballRadius = 15;
 
     let animationFrame;
     let lastTime = 0;
     let time = 0;
-    let angle;
-    let initialVelocity;
-    let cliffHeight;
-    let vx, vy;
+    let angle, initialVelocity, cliffHeight;
+    let v_x0, v_y0; // Initial velocities
     let x = 0, y = 0;
+    let maxHeight = 0;
     let isRunning = false;
     let results = [];
 
-    startButton.addEventListener('click', () => {
-      console.log("Start button clicked");
-      startSimulation();
-    });
+    startButton.addEventListener('click', startSimulation);
 
-    function updateVelocityArrows() {
+    function updateVelocityArrows(vx, vy) {
       const ballX = x * scaleX;
       const ballY = y * scaleY;
       const ballCenterX = ballX + ballRadius;
       const ballCenterY = simulationArea.clientHeight - (ballY + ballRadius);
 
-      // Horizontal velocity arrow (vx)
+      // Horizontal velocity arrow
       vxArrow.setAttribute('x1', ballCenterX);
       vxArrow.setAttribute('y1', ballCenterY);
       const vxEndX = ballCenterX + (vx * ARROW_SCALE);
       vxArrow.setAttribute('x2', vxEndX);
       vxArrow.setAttribute('y2', ballCenterY);
 
-      // Vertical velocity arrow (vy)
+      // Vertical velocity arrow
       vyArrow.setAttribute('x1', ballCenterX);
       vyArrow.setAttribute('y1', ballCenterY);
       let vyEndY = ballCenterY - (vy * ARROW_SCALE);
-      // Prevent vy arrow from going below the simulation box
       if (vyEndY > simulationArea.clientHeight) vyEndY = simulationArea.clientHeight;
       if (vyEndY < 0) vyEndY = 0;
       vyArrow.setAttribute('x2', ballCenterX);
       vyArrow.setAttribute('y2', vyEndY);
 
       // Update velocity text
-      vxText.setAttribute('x', vxEndX + (vx >= 0 ? 5 : -30)); // Adjusted for smaller arrows
+      vxText.setAttribute('x', vxEndX + (vx >= 0 ? 5 : -30));
       vxText.setAttribute('y', ballCenterY + 5);
       vxText.textContent = `vx: ${vx.toFixed(1)}`;
 
       vyText.setAttribute('x', ballCenterX + 5);
-      vyText.setAttribute('y', vyEndY + (vy >= 0 ? -5 : 10)); // Adjusted for smaller arrows
+      vyText.setAttribute('y', vyEndY + (vy >= 0 ? -5 : 10));
       vyText.textContent = `vy: ${vy.toFixed(1)}`;
     }
 
     function startSimulation() {
-      console.log("startSimulation called");
-
       if (isRunning) {
         cancelAnimationFrame(animationFrame);
         isRunning = false;
       }
 
+      // Reset variables
       time = 0;
       x = 0;
       y = 0;
-      ball.style.left = '0px';
-      ball.style.bottom = '0px';
+      maxHeight = 0;
       velocityText.textContent = '0, 0';
       timeText.textContent = '0.00';
 
+      // Get input values
       cliffHeight = Math.min(
         Math.max(1, parseFloat(document.getElementById('cliffHeight').value)),
         MAX_CLIFF_HEIGHT
@@ -251,19 +256,22 @@
 
       if (isNaN(initialVelocity) || initialVelocity <= 0) {
         alert("Please enter a valid initial velocity greater than 0.");
-        console.log("Invalid velocity:", initialVelocity);
         return;
       }
 
+      // Calculate initial velocities
       const radianAngle = angle * Math.PI / 180;
-      vx = initialVelocity * Math.cos(radianAngle);
-      vy = initialVelocity * Math.sin(radianAngle);
+      v_x0 = initialVelocity * Math.cos(radianAngle);
+      v_y0 = initialVelocity * Math.sin(radianAngle);
+
+      // Set initial position
       x = 0;
       y = cliffHeight;
+      maxHeight = cliffHeight;
 
       ball.style.left = `${x * scaleX}px`;
       ball.style.bottom = `${y * scaleY}px`;
-      updateVelocityArrows();
+      updateVelocityArrows(v_x0, v_y0);
 
       lastTime = performance.now();
       isRunning = true;
@@ -271,35 +279,31 @@
     }
 
     function animate(currentTime) {
-      if (!isRunning) {
-        console.log("Animation stopped");
-        return;
-      }
+      if (!isRunning) return;
 
       const deltaTime = (currentTime - lastTime) / 1000;
       lastTime = currentTime;
-
       time += deltaTime;
 
-      x += vx * deltaTime;
-      vy -= g * deltaTime;
-      y += vy * deltaTime;
+      // Calculate positions using exact equations
+      x = v_x0 * time;
+      const vy = v_y0 - (g * time);
+      y = cliffHeight + (v_y0 * time) - (0.5 * g * time * time);
+      maxHeight = Math.max(maxHeight, y);
 
-      let maxHeight = Math.max(cliffHeight, y);
-
+      // Scale positions for display
       let scaledX = x * scaleX;
       let scaledY = y * scaleY;
 
       const maxX = simulationArea.clientWidth - ball.clientWidth;
-      const maxY = simulationArea.clientHeight - ball.clientHeight;
 
+      // Check boundaries
       if (scaledX > maxX) {
         scaledX = maxX;
         x = scaledX / scaleX;
-        vx = 0;
       }
 
-      if (scaledY < 0) {
+      if (y <= 0) {
         scaledY = 0;
         y = 0;
         isRunning = false;
@@ -318,9 +322,9 @@
 
       ball.style.left = `${scaledX}px`;
       ball.style.bottom = `${scaledY}px`;
-      updateVelocityArrows();
+      updateVelocityArrows(v_x0, vy);
 
-      velocityText.textContent = `${vx.toFixed(2)}, ${vy.toFixed(2)}`;
+      velocityText.textContent = `${v_x0.toFixed(2)}, ${vy.toFixed(2)}`;
       timeText.textContent = time.toFixed(2);
 
       animationFrame = requestAnimationFrame(animate);
