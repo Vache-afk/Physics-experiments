@@ -7,7 +7,104 @@
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chhtml.js"></script>
   <style>
-    /* Same styles as original */
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #simulation {
+      position: relative;
+      width: 800px;
+      height: 500px;
+      margin: 20px auto;
+      border: 2px solid #000;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+    #cliff {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 5px;
+      height: 100%;
+      background-color: brown;
+    }
+    .ball {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: red;
+    }
+    #controls {
+      margin-top: 20px;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #ddd;
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: white;
+      color: blue;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+    .back-button:hover {
+      background-color: lightgray;
+    }
+    #equationDisplay {
+      margin: 20px auto;
+      font-size: 18px;
+      text-align: left;
+      display: inline-block;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    #equationDisplay p {
+      margin: 10px 0;
+    }
+    .arrow {
+      stroke: black;
+      stroke-width: 1;
+      marker-end: url(#arrowhead);
+    }
+    .velocity-text {
+      font-size: 10px;
+      fill: black;
+    }
+    .equation-group {
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+    }
+    .equation-group:last-child {
+      border-bottom: none;
+    }
+    .equation-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
@@ -16,18 +113,18 @@
   <div id="equationDisplay">
     <div class="equation-group">
       <div class="equation-title">Position Equations (Projectile Motion):</div>
-      <p>Horizontal Position: \( x(t) = v_0 \cos(\theta) \cdot t \)</p>
-      <p>Vertical Position: \( y(t) = h_0 + v_0 \sin(\theta) \cdot t - \frac{1}{2} g t^2 \)</p>
+      <p>Horizontal position: \( x(t) = v_0 \cos(\theta) \cdot t \)</p>
+      <p>Vertical position: \( y(t) = h_0 + v_0 \sin(\theta) \cdot t - \frac{1}{2} g t^2 \)</p>
       <p style="font-style: italic; color: #666;">
-        These equations describe the ball's position at any time t.<br>
-        Horizontal motion is constant velocity, while vertical motion includes gravity's effect.
+        These equations describe the ball's position at any time \( t \).<br>
+        Horizontal motion is at constant velocity, while vertical motion is affected by gravity.
       </p>
     </div>
     
     <div class="equation-group">
       <div class="equation-title">Velocity Equations:</div>
-      <p>Horizontal Velocity: \( v_x = v_0 \cos(\theta) \) (remains constant)</p>
-      <p>Vertical Velocity: \( v_y(t) = v_0 \sin(\theta) - g \cdot t \) (changes over time)</p>
+      <p>Horizontal velocity (constant): \( v_x = v_0 \cos(\theta) \)</p>
+      <p>Vertical velocity (changes with time): \( v_y(t) = v_0 \sin(\theta) - g t \)</p>
       <p style="font-style: italic; color: #666;">
         Horizontal velocity stays constant as there's no horizontal acceleration.<br>
         Vertical velocity decreases due to gravity acting downward.
@@ -36,28 +133,28 @@
     
     <div class="equation-group">
       <div class="equation-title">Key Results:</div>
-      <p>Time of Flight: \( t_{flight} = \frac{v_0 \sin(\theta) + \sqrt{(v_0 \sin(\theta))^2 + 2 g h_0}}{g} \)</p>
-      <p>Maximum Height: \( y_{max} = h_0 + \frac{(v_0 \sin(\theta))^2}{2g} \)</p>
-      <p>Horizontal Range: \( R = v_0 \cos(\theta) \cdot t_{flight} \)</p>
+      <p>Time of flight: \( t_{\text{flight}} = \frac{v_0 \sin(\theta) + \sqrt{(v_0 \sin(\theta))^2 + 2 g h_0}}{g} \)</p>
+      <p>Maximum height: \( y_{\text{max}} = h_0 + \frac{(v_0 \sin(\theta))^2}{2 g} \)</p>
+      <p>Horizontal range: \( R = v_0 \cos(\theta) \cdot t_{\text{flight}} \)</p>
       <p style="font-style: italic; color: #666;">
-        Time of flight is when the ball hits the ground (y=0).<br>
-        Max height occurs at the peak of the trajectory.<br>
+        Time of flight is when the ball hits the ground (\( y = 0 \)).<br>
+        Maximum height occurs at the peak of the trajectory.<br>
         Range is the horizontal distance traveled.
       </p>
     </div>
     
     <div class="equation-group">
-      <div class="equation-title">Variables Explained:</div>
+      <div class="equation-title">Variables:</div>
       <ul style="text-align: left; display: inline-block;">
+        <li>\( x(t) \): Horizontal position (meters) - distance from the cliff</li>
+        <li>\( y(t) \): Vertical position (meters) - height above the ground</li>
+        <li>\( v_x \): Horizontal velocity (m/s) - constant speed to the right</li>
+        <li>\( v_y(t) \): Vertical velocity (m/s) - changes over time</li>
         <li>\( v_0 \): Initial speed (m/s) - how fast the ball is thrown</li>
-        <li>\( \theta \): Launch angle (degrees) - angle from horizontal</li>
-        <li>\( h_0 \): Initial height (m) - height of the cliff</li>
-        <li>\( g \): Gravity (9.81 m/s²) - downward acceleration</li>
-        <li>\( t \): Time (s) - time since launch</li>
-        <li>\( x(t) \): Horizontal position (m) - distance from cliff</li>
-        <li>\( y(t) \): Vertical position (m) - height above ground</li>
-        <li>\( v_x \): Horizontal velocity (m/s) - constant speed rightward</li>
-        <li>\( v_y(t) \): Vertical velocity (m/s) - changes with time</li>
+        <li>\( \theta \): Launch angle (degrees) - angle from the horizontal</li>
+        <li>\( h_0 \): Initial cliff height (meters) - starting height</li>
+        <li>\( g \): Acceleration due to gravity (9.81 m/s²) - downward acceleration</li>
+        <li>\( t \): Time (seconds) - time since the ball was thrown</li>
       </ul>
     </div>
   </div>
@@ -66,7 +163,7 @@
     <div id="cliff"></div>
     <svg id="svgCanvas" width="800" height="500" style="position: absolute; top: 0; left: 0;">
       <defs>
-        <marker id="head" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto">
+        <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="3" refY="1.5" orient="auto">
           <polygon points="0 0, 4 1.5, 0 3" />
         </marker>
       </defs>
@@ -124,7 +221,7 @@
   </div>
 
   <script>
-    const g = 9.81; // Acceleration due to gravity in m/s²
+    const g = 9.81; // Acceleration due to gravity (m/s²)
     const simulationArea = document.getElementById('simulation');
     const ball = document.getElementById('ball');
     const velocityText = document.getElementById('velocityText');
@@ -135,22 +232,22 @@
     const vxText = document.getElementById('vxText');
     const vyText = document.getElementById('vyText');
 
-    // Scaling factors
+    // Scaling factors to fit the simulation in the display area
     const scaleX = 0.5; // Pixels per meter horizontally
     const scaleY = 1;   // Pixels per meter vertically
     const MAX_CLIFF_HEIGHT = 200;
-    const ARROW_SCALE = 1.5;
-    const ballRadius = 15;
+    const ARROW_SCALE = 1.5; // Scaling factor for velocity arrows
+    const ballRadius = 15;   // Radius of the ball in pixels
 
     let animationFrame;
     let lastTime = 0;
     let time = 0;
     let angle, initialVelocity, cliffHeight;
-    let v_x0, v_y0; // Initial velocity components
-    let x = 0, y = 0; // Current position
-    let maxHeight = 0;
+    let v_x0, v_y0; // Initial velocities in x and y directions
+    let x = 0, y = 0; // Current position in meters
+    let maxHeight = 0; // Tracks maximum height reached
     let isRunning = false;
-    let results = [];
+    let results = []; // Stores all simulation results
 
     startButton.addEventListener('click', startSimulation);
 
@@ -160,12 +257,14 @@
       const ballCenterX = ballX + ballRadius;
       const ballCenterY = simulationArea.clientHeight - (ballY + ballRadius);
 
+      // Update horizontal velocity arrow (constant)
       vxArrow.setAttribute('x1', ballCenterX);
       vxArrow.setAttribute('y1', ballCenterY);
       const vxEndX = ballCenterX + (vx * ARROW_SCALE);
       vxArrow.setAttribute('x2', vxEndX);
       vxArrow.setAttribute('y2', ballCenterY);
 
+      // Update vertical velocity arrow (changes with time)
       vyArrow.setAttribute('x1', ballCenterX);
       vyArrow.setAttribute('y1', ballCenterY);
       let vyEndY = ballCenterY - (vy * ARROW_SCALE);
@@ -174,6 +273,7 @@
       vyArrow.setAttribute('x2', ballCenterX);
       vyArrow.setAttribute('y2', vyEndY);
 
+      // Update velocity text labels
       vxText.setAttribute('x', vxEndX + (vx >= 0 ? 5 : -30));
       vxText.setAttribute('y', ballCenterY + 5);
       vxText.textContent = `vx: ${vx.toFixed(1)}`;
@@ -189,6 +289,7 @@
         isRunning = false;
       }
 
+      // Reset simulation variables
       time = 0;
       x = 0;
       y = 0;
@@ -196,6 +297,7 @@
       velocityText.textContent = '0, 0';
       timeText.textContent = '0.00';
 
+      // Get and validate input values
       cliffHeight = Math.min(
         Math.max(1, parseFloat(document.getElementById('cliffHeight').value)),
         MAX_CLIFF_HEIGHT
@@ -210,14 +312,17 @@
         return;
       }
 
-      const radianAngle = angle * Math.PI / 180;
-      v_x0 = initialVelocity * Math.cos(radianAngle); // v_x = v₀cos(θ)
-      v_y0 = initialVelocity * Math.sin(radianAngle); // v_y = v₀sin(θ)
+      // Calculate initial velocity components
+      const radianAngle = angle * Math.PI / 180; // Convert degrees to radians
+      v_x0 = initialVelocity * Math.cos(radianAngle); // Horizontal component: v₀cos(θ)
+      v_y0 = initialVelocity * Math.sin(radianAngle); // Vertical component: v₀sin(θ)
 
+      // Set initial position (top of cliff)
       x = 0;
       y = cliffHeight;
-      maxHeight = cliffHeight;
+      maxHeight = cliffHeight; // Initialize max height with cliff height
 
+      // Position the ball and draw initial velocity vectors
       ball.style.left = `${x * scaleX}px`;
       ball.style.bottom = `${y * scaleY}px`;
       updateVelocityArrows(v_x0, v_y0);
@@ -230,31 +335,38 @@
     function animate(currentTime) {
       if (!isRunning) return;
 
+      // Calculate time since last frame (delta time in seconds)
       const deltaTime = (currentTime - lastTime) / 1000;
       lastTime = currentTime;
       time += deltaTime;
 
-      // Physics calculations
-      x = v_x0 * time;                    // x = v₀cos(θ)·t
-      const vy = v_y0 - (g * time);       // v_y = v₀sin(θ) - g·t
-      y = cliffHeight + (v_y0 * time) - (0.5 * g * time * time); // y = h₀ + v₀sin(θ)·t - ½g·t²
+      // Calculate current position using projectile motion equations
+      x = v_x0 * time; // Horizontal position: x = v₀cos(θ)·t
+      const vy = v_y0 - (g * time); // Vertical velocity: v_y = v₀sin(θ) - g·t
+      y = cliffHeight + (v_y0 * time) - (0.5 * g * time * time); // Vertical position: y = h₀ + v₀sin(θ)·t - ½g·t²
       
+      // Track maximum height reached
       maxHeight = Math.max(maxHeight, y);
 
+      // Scale positions for display
       let scaledX = x * scaleX;
       let scaledY = y * scaleY;
+
       const maxX = simulationArea.clientWidth - ball.clientWidth;
 
+      // Check boundaries
       if (scaledX > maxX) {
         scaledX = maxX;
         x = scaledX / scaleX;
       }
 
+      // Check if ball has hit the ground (y ≤ 0)
       if (y <= 0) {
         scaledY = 0;
         y = 0;
         isRunning = false;
 
+        // Save results for this simulation run
         results.push({
           cliffHeight: cliffHeight.toFixed(2),
           angle: angle,
@@ -267,10 +379,12 @@
         return;
       }
 
+      // Update ball position and velocity vectors
       ball.style.left = `${scaledX}px`;
       ball.style.bottom = `${scaledY}px`;
       updateVelocityArrows(v_x0, vy);
 
+      // Update display values
       velocityText.textContent = `${v_x0.toFixed(2)}, ${vy.toFixed(2)}`;
       timeText.textContent = time.toFixed(2);
 
@@ -304,6 +418,7 @@
       URL.revokeObjectURL(link.href);
     }
 
+    // Validate cliff height input
     document.getElementById('cliffHeight').addEventListener('change', function() {
       let value = parseFloat(this.value);
       if (value > MAX_CLIFF_HEIGHT) this.value = MAX_CLIFF_HEIGHT;
