@@ -84,10 +84,6 @@
     #equationDisplay p {
       margin: 10px 0;
     }
-    #equationDisplay em {
-      color: #555;
-      font-size: 16px;
-    }
     .arrow {
       stroke: black;
       stroke-width: 1;
@@ -103,30 +99,23 @@
   <h1>Throwing Ball from Cliff Experiment</h1>
 
   <div id="equationDisplay">
-    <p><strong>Equations of Motion for the Ball:</strong></p>
-    <p><strong>Horizontal Position:</strong> \( x(t) = v_0 \cos(\theta) \cdot t \)</p>
-    <p style="text-align: left; margin-left: 20px;"><em>The ball moves horizontally at a constant speed, determined by the initial velocity \( v_0 \) and the angle \( \theta \). There’s no horizontal acceleration, so the position increases linearly with time.</em></p>
-    
-    <p><strong>Vertical Position:</strong> \( y(t) = h_0 + v_0 \sin(\theta) \cdot t - \frac{1}{2} g t^2 \)</p>
-    <p style="text-align: left; margin-left: 20px;"><em>The ball’s vertical position starts at the cliff height \( h_0 \). It initially moves upward due to the vertical component of the velocity (\( v_0 \sin(\theta) \)), but gravity (\( g \)) pulls it downward, causing the \( -\frac{1}{2} g t^2 \) term.</em></p>
-    
-    <p><strong>Horizontal Velocity:</strong> \( v_x = v_0 \cos(\theta) \)</p>
-    <p style="text-align: left; margin-left: 20px;"><em>The horizontal velocity remains constant throughout the flight because gravity only acts vertically, not horizontally.</em></p>
-    
-    <p><strong>Vertical Velocity:</strong> \( v_y = v_0 \sin(\theta) - g t \)</p>
-    <p style="text-align: left; margin-left: 20px;"><em>The vertical velocity starts at \( v_0 \sin(\theta) \) and decreases over time as gravity (\( g \)) acts downward, reducing the upward speed until the ball starts falling.</em></p>
-    
-    <p><strong>Variables Explained:</strong></p>
+    <p><strong>Path Equations:</strong></p>
+    <p>\( x(t) = v_0 \cos(\theta) t \)</p>
+    <p>\( y(t) = h_0 + v_0 \sin(\theta) t - \frac{1}{2} g t^2 \)</p>
+    <p><strong>Equations for Velocities:</strong></p>
+    <p>\( v_x = v_0 \cos(\theta) \)</p>
+    <p>\( v_y = v_0 \sin(\theta) - g t \)</p>
+    <p><strong>Where:</strong></p>
     <ul style="text-align: left; display: inline-block;">
-      <li>\( x(t) \): Horizontal position of the ball at time \( t \) (meters)</li>
-      <li>\( y(t) \): Vertical position of the ball at time \( t \) (meters)</li>
-      <li>\( v_x \): Horizontal velocity (constant, in m/s)</li>
-      <li>\( v_y \): Vertical velocity (changes due to gravity, in m/s)</li>
-      <li>\( v_0 \): Initial speed of the ball (m/s)</li>
-      <li>\( \theta \): Launch angle (degrees)</li>
-      <li>\( h_0 \): Initial height of the cliff (meters)</li>
-      <li>\( g \): Acceleration due to gravity (\( 9.81 \, \text{m/s}^2 \))</li>
-      <li>\( t \): Time since the ball was thrown (seconds)</li>
+      <li>\( x(t) \): horizontal position (m)</li>
+      <li>\( y(t) \): vertical position (m)</li>
+      <li>\( v_x \): horizontal velocity (m/s)</li>
+      <li>\( v_y \): vertical velocity (m/s)</li>
+      <li>\( v_0 \): initial speed (m/s)</li>
+      <li>\( \theta \): launch angle (degrees)</li>
+      <li>\( h_0 \): cliff height (m)</li>
+      <li>\( g \): gravity (\( 9.81 \, \text{m/s}^2 \))</li>
+      <li>\( t \): time (s)</li>
     </ul>
   </div>
 
