@@ -74,6 +74,8 @@
     #equationDisplay {
       margin: 20px auto;
       font-size: 18px;
+      text-align: left;
+      display: inline-block;
     }
     .arrow {
       stroke: black;
@@ -90,23 +92,14 @@
   <h1>Throwing Ball from Cliff Experiment</h1>
 
   <div id="equationDisplay">
-    <p>The position of the ball is calculated using the following equations:</p>
-    <p>Horizontal Position: \( x = v_{x0} t \)</p>
-    <p>Vertical Position: \( y = h_0 + v_{y0} t - \frac{1}{2} g t^2 \)</p>
-    <p>Horizontal Velocity: \( v_x = v_{x0} \)</p>
-    <p>Vertical Velocity: \( v_y = v_{y0} - g t \)</p>
-    <p>Where:</p>
-    <ul style="text-align: left; display: inline-block;">
-      <li>\( x \): horizontal position (m)</li>
-      <li>\( y \): vertical position (m)</li>
-      <li>\( v_x \): horizontal velocity (m/s)</li>
-      <li>\( v_y \): vertical velocity (m/s)</li>
-      <li>\( v_{x0} \): initial horizontal velocity (m/s)</li>
-      <li>\( v_{y0} \): initial vertical velocity (m/s)</li>
-      <li>\( h_0 \): initial cliff height (m)</li>
-      <li>\( g \): gravitational acceleration (9.81 m/s\(^2\))</li>
-      <li>\( t \): time (s)</li>
-    </ul>
+    <p><strong>Path Equations:</strong></p>
+    <p>\( x(t) = v_0 \cos(\theta) t \)</p>
+    <p>\( y(t) = h_0 + v_0 \sin(\theta) t - \frac{1}{2} g t^2 \)</p>
+    <p><strong>Equations for Velocities:</strong></p>
+    <p>\( V_x = v_0 \cos(\theta) \)</p>
+    <p>\( V_y = v_0 \sin(\theta) - g t \)</p>
+    <p><strong>Where:</strong></p>
+    <p>\( v_0 \): initial velocity (m/s), \( \theta \): launch angle (degrees), \( h_0 \): cliff height (m), \( g \): gravitational acceleration (9.81 m/s\(^2\)), \( t \): time (s)</p>
   </div>
 
   <div id="simulation">
